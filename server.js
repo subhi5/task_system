@@ -16,6 +16,9 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ASSIGN_FILE = path.join(DATA_DIR, 'assignments.json');
 const CATEGORY_FILE = path.join(DATA_DIR, 'categories.json');
 const ORDER_FILE = path.join(DATA_DIR, 'module-order.json');
+const PROJECT_ORDER_FILE = path.join(DATA_DIR, 'project-order.json');
+const MODULE_LEADS_FILE = path.join(DATA_DIR, 'module-leads.json');
+const PLAN_META_FILE = path.join(DATA_DIR, 'plan-meta.json');
 const SECRET_FILE = path.join(DATA_DIR, 'secret.key');
 const NOTES_FILE = path.join(DATA_DIR, 'notes.json');
 const FILES_DIR = path.join(DATA_DIR, 'files');        // uploaded project/version files, stored by id only
@@ -54,6 +57,9 @@ const saveUsers = () => writeJson(USERS_FILE, users);
 const saveAssignments = () => writeJson(ASSIGN_FILE, assignments);
 let categories = readJson(CATEGORY_FILE, {}); // { slug: { projectId: { category, depts: [] } } }
 let moduleOrder = readJson(ORDER_FILE, {}); // { slug: { versionId: [moduleId] } }
+let planMeta = readJson(PLAN_META_FILE, {}); // { slug: { versions: { cycleId: state }, modules: { moduleId: dept } } }
+let moduleLeads = readJson(MODULE_LEADS_FILE, {}); // { slug: { moduleId: dashboard userId } }
+let projectOrder = readJson(PROJECT_ORDER_FILE, {}); // { slug: [projectId] } — the admin's drag order on the Projects page
 let fileIndex = readJson(FILES_INDEX, {});
 let notes = readJson(NOTES_FILE, {}); // { userId: [note] } — private sticky notes, not tied to any task
 const NOTE_COLORS = ['yellow', 'pink', 'green', 'blue', 'purple', 'orange'];
@@ -73,6 +79,14 @@ function setNotes(user, list) {
     writeJson(NOTES_FILE, notes);
     return clean;
 }
+function setProjectOrder(slug, ids) {
+    if (!wsByLink(slug)) throw fail(400, 'Bad request');
+    const list = [...new Set((Array.isArray(ids) ? ids : []).map(x => String(x).toLowerCase()))];
+    if (list.length > 500 || !list.every(x => UUID_RE.test(x))) throw fail(400, 'Bad project list');
+    if (list.length) projectOrder[slug] = list; else delete projectOrder[slug];
+    writeJson(PROJECT_ORDER_FILE, projectOrder);
+    return list;
+}
 function setModuleOrder(slug, versionId, ids) {
     versionId = String(versionId || '').toLowerCase();
     if (!wsByLink(slug) || !UUID_RE.test(versionId)) throw fail(400, 'Bad request');
@@ -85,15 +99,17 @@ function setModuleOrder(slug, versionId, ids) {
 }
 const CATEGORY_KEYS = ['machine', 'robot', 'office'];
 const DEPT_KEYS = ['mechanical', 'electronics', 'software'];
-function setCategory(slug, projectId, category, depts) {
+const PROJECT_STATUS = ['active', 'hold', 'closed']; // 'active' is the default and is not stored
+function setCategory(slug, projectId, category, depts, status) {
     projectId = String(projectId || '').toLowerCase();
     if (!wsByLink(slug) || !UUID_RE.test(projectId)) throw fail(400, 'Bad request');
     if (category && !CATEGORY_KEYS.includes(category)) throw fail(400, 'Unknown category');
     const ds = [...new Set(Array.isArray(depts) ? depts : [])].filter(d => DEPT_KEYS.includes(d));
+    const st = PROJECT_STATUS.includes(status) ? status : 'active';
     categories[slug] = categories[slug] || {};
-    if (category || ds.length) categories[slug][projectId] = { category: category || '', depts: ds }; else delete categories[slug][projectId];
+    if (category || ds.length || st !== 'active') categories[slug][projectId] = { category: category || '', depts: ds, status: st }; else delete categories[slug][projectId];
     writeJson(CATEGORY_FILE, categories);
-    return categories[slug][projectId] || { category: '', depts: [] };
+    return categories[slug][projectId] || { category: '', depts: [], status: 'active' };
 }
 
 // ---------- Passwords and sessions ----------
@@ -286,6 +302,22 @@ function trimForEmployee(rule, user, slug, res) {
     return Object.assign({}, res, { body: JSON.stringify(Array.isArray(data) ? out : Object.assign({}, data, { results: out, count: out.length, total_results: out.length })) });
 }
 
+// New Plane projects start with versions and modules off: switch them on as soon as the dashboard sees them.
+const FEATURES_ON = Buffer.from(JSON.stringify({ cycle_view: true, module_view: true }));
+const featuresDone = new Set();
+const enableFeatures = (ws, pid) => callPlane(ws, 'PATCH', `/projects/${pid}/`, '', FEATURES_ON).then(r => { if (r.status >= 300) throw fail(r.status, 'enable failed'); return r; });
+function enableFeaturesIn(ws, res) {
+    if (res.status !== 200) return res;
+    let data;
+    try { data = JSON.parse(res.body); } catch (e) { return res; }
+    const list = listOf(data);
+    const off = list.filter(p => p && p.id && (p.cycle_view === false || p.module_view === false) && !featuresDone.has(p.id));
+    if (!off.length) return res;
+    off.forEach(p => { featuresDone.add(p.id); enableFeatures(ws, p.id).catch(() => featuresDone.delete(p.id)); p.cycle_view = true; p.module_view = true; });
+    for (const k of cache.keys()) if (k.startsWith(ws.slug + '/projects/')) cache.delete(k);
+    return Object.assign({}, res, { body: JSON.stringify(data) });
+}
+
 // One gate for every Plane call, from the page or from Claude: same rules, same cache.
 async function planeAs(user, slug, method, rest, search, body) {
     const ws = wsByLink(slug);
@@ -300,8 +332,17 @@ async function planeAs(user, slug, method, rest, search, body) {
     let out;
     if (method === 'GET') {
         out = await planeCached(ws, rest, search);
+        if (rest === '/projects/') out = enableFeaturesIn(ws, out);
     } else {
         out = await callPlane(ws, method, rest, search, body);
+        if (method === 'POST' && rest === '/projects/' && out.status < 300) {
+            try { const p = JSON.parse(out.body); if (p && p.id) { await enableFeatures(ws, p.id); p.cycle_view = true; p.module_view = true; out = Object.assign({}, out, { body: JSON.stringify(p) }); } } catch (e) { /* best effort */ }
+        }
+        const feat = method === 'POST' && out.status === 400 && /not enabled/i.test(out.body) && rest.match(new RegExp(`^/projects/(${UUID})/(cycles|modules)/$`, 'i'));
+        if (feat) { // fallback if a project was switched off later: turn it back on and retry
+            await enableFeatures(ws, feat[1]);
+            out = await callPlane(ws, method, rest, search, body);
+        }
         if (out.status < 300) { cacheGen.set(slug, (cacheGen.get(slug) || 0) + 1); for (const k of cache.keys()) if (k.startsWith(slug + '/')) cache.delete(k); }
     }
     return user.role !== 'admin' ? trimForEmployee(rule, user, slug, out) : out;
@@ -470,6 +511,35 @@ function setAssignment(user, slug, issueId, projectId, userIds) {
     if (ids.length) assignments[slug][issueId] = ids; else delete assignments[slug][issueId];
     saveAssignments();
     return ids;
+}
+function setModuleLead(user, slug, moduleId, projectId, userId) {
+    moduleId = String(moduleId || '').toLowerCase();
+    projectId = String(projectId || '').toLowerCase();
+    if (!wsByLink(slug) || !UUID_RE.test(moduleId) || !UUID_RE.test(projectId)) throw fail(400, 'Bad request');
+    if (!managesProject(user, slug, projectId)) throw fail(403, 'Only an admin or this project\'s admin can change its module leads');
+    if (userId) {
+        const u = users.find(x => x.id === userId);
+        if (!u || u.role !== 'employee' || !u.active || !(u.access && u.access[slug] && u.access[slug].includes(projectId))) throw fail(400, 'That person is not on this project');
+    }
+    moduleLeads[slug] = moduleLeads[slug] || {};
+    if (userId) moduleLeads[slug][moduleId] = userId; else delete moduleLeads[slug][moduleId];
+    writeJson(MODULE_LEADS_FILE, moduleLeads);
+    return userId || null;
+}
+const VERSION_STATES = ['planned', 'in-progress', 'paused', 'completed', 'cancelled'];
+const MODULE_DEPTS = ['mechanical', 'electronics', 'software'];
+function setPlanMeta(user, slug, kind, id, projectId, value) {
+    id = String(id || '').toLowerCase();
+    projectId = String(projectId || '').toLowerCase();
+    if (!wsByLink(slug) || !UUID_RE.test(id) || !UUID_RE.test(projectId)) throw fail(400, 'Bad request');
+    if (!managesProject(user, slug, projectId)) throw fail(403, 'Only an admin or this project\'s admin can change this');
+    const allowed = kind === 'versions' ? VERSION_STATES : MODULE_DEPTS;
+    if (value && !allowed.includes(value)) throw fail(400, 'Unknown value');
+    planMeta[slug] = planMeta[slug] || { versions: {}, modules: {} };
+    const box = planMeta[slug][kind] = planMeta[slug][kind] || {};
+    if (value) box[id] = value; else delete box[id];
+    writeJson(PLAN_META_FILE, planMeta);
+    return value || null;
 }
 const teamOf = (slug) => users.filter(u => u.role === 'employee' && u.active && u.access && u.access[slug]).map(u => ({ id: u.id, name: u.name }));
 
@@ -649,6 +719,33 @@ async function apiRoutes(req, res, user, url) {
         if (!managesProject(user, m[1], b.projectId)) throw fail(403, 'Only an admin or this project\'s admin can reorder its modules');
         return sendJson(res, 200, { ids: setModuleOrder(m[1], m[2], b.ids) });
     }
+    if (p === '/api/plan-meta' && req.method === 'GET') {
+        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
+        return sendJson(res, 200, planMeta[slug] || { versions: {}, modules: {} });
+    }
+    if ((m = p.match(/^\/api\/plan-meta\/([A-Za-z0-9_-]+)\/(version|module)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
+        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
+        const b = await readJsonBody(req);
+        return sendJson(res, 200, { value: setPlanMeta(user, m[1], m[2].toLowerCase() === 'version' ? 'versions' : 'modules', m[3], b.projectId, b.value) });
+    }
+    if (p === '/api/module-leads' && req.method === 'GET') {
+        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
+        return sendJson(res, 200, moduleLeads[slug] || {});
+    }
+    if ((m = p.match(/^\/api\/module-leads\/([A-Za-z0-9_-]+)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
+        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
+        const b = await readJsonBody(req);
+        return sendJson(res, 200, { userId: setModuleLead(user, m[1], m[2], b.projectId, b.userId) });
+    }
+    if (p === '/api/project-order' && req.method === 'GET') {
+        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
+        return sendJson(res, 200, projectOrder[slug] || []);
+    }
+    if ((m = p.match(/^\/api\/project-order\/([A-Za-z0-9_-]+)$/)) && req.method === 'PUT') {
+        if (user.role !== 'admin') throw fail(403, 'Admins only');
+        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
+        return sendJson(res, 200, { ids: setProjectOrder(m[1], (await readJsonBody(req)).ids) });
+    }
     if (p === '/api/categories' && req.method === 'GET') {
         if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
         return sendJson(res, 200, categories[slug] || {});
@@ -657,7 +754,7 @@ async function apiRoutes(req, res, user, url) {
         if (user.role !== 'admin') throw fail(403, 'Admins only');
         if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
         const b = await readJsonBody(req);
-        return sendJson(res, 200, setCategory(m[1], m[2], String(b.category || ''), b.depts));
+        return sendJson(res, 200, setCategory(m[1], m[2], String(b.category || ''), b.depts, String(b.status || 'active')));
     }
     if ((m = p.match(/^\/api\/assignments\/([A-Za-z0-9_-]+)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
         const b = await readJsonBody(req);

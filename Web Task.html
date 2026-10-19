@@ -303,14 +303,18 @@
         .report-table tr:last-child td { border-bottom: none; }
         .report-table tbody tr:hover { background: var(--bg-hover); }
         .report-table th.actions-col, .report-table td.actions-col { width: 36px; text-align: center; cursor: default; }
+        #tasksTable th.actions-col, #tasksTable td.actions-col { position: sticky; right: 0; z-index: 1; background: var(--bg-elevated); box-shadow: -1px 0 0 var(--border); } /* delete stays in view */
+        #tasksTable th.actions-col { z-index: 3; }
+        #tasksTable tbody tr:hover td.actions-col { background: linear-gradient(var(--bg-hover), var(--bg-hover)), var(--bg-elevated); }
         .th-add-btn { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent-soft); color: var(--accent); font-size: 16px; font-weight: 700; line-height: 1; cursor: pointer; padding: 0; }
         .th-add-btn:hover { background: var(--accent); color: #fff; }
 
         .btn-icon-delete {
             background: none; border: none; color: var(--text-muted); cursor: pointer;
-            font-size: 14px; padding: 3px 6px; border-radius: 6px; line-height: 1;
+            width: 28px; height: 28px; padding: 0; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center;
         }
         .btn-icon-delete:hover { background: var(--bg-hover); color: #e11d48; }
+        .btn-icon-delete svg { width: 15px; height: 15px; }
         .btn-icon-delete:disabled { opacity: .5; cursor: wait; }
 
         .assignee-cell {
@@ -552,6 +556,7 @@
         .modal-head h3 { margin: 0; font-size: 15px; }
         .modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         .form-row { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+        .form-row[hidden] { display: none; }
         .form-row select, .form-row input { width: 100%; }
         .form-row-pair { display: flex; gap: 10px; }
         .form-row-pair .form-row { flex: 1; }
@@ -966,6 +971,7 @@
         .cat-toggle { padding: 4px 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; }
         .cat-toggle.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
         .cat-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .pj-status-pill { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; vertical-align: middle; color: var(--k); background: color-mix(in srgb, var(--k) 15%, transparent); }
         @media (max-width: 900px) {
             .card-head { flex-direction: column; align-items: stretch; }
             .card-head .toolbar { flex: none; width: 100%; }
@@ -975,7 +981,7 @@
         }
         .pj-list[hidden] { display: none; }
         .pj-list { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-input); overflow: hidden; }
-        .pj-row { display: grid; grid-template-columns: minmax(170px, 1fr) 82px 118px 70px 54px minmax(0, 4fr) 34px; align-items: center; gap: 12px; padding: 5px 14px; min-height: 54px; border-bottom: 1px solid var(--border); }
+        .pj-row { display: grid; grid-template-columns: minmax(170px, 1fr) 82px 118px 70px 54px minmax(0, 4fr) 62px; align-items: center; gap: 12px; padding: 5px 14px; min-height: 54px; border-bottom: 1px solid var(--border); }
         .pj-row:last-child { border-bottom: none; }
         .pj-row.pj-headrow { min-height: 34px; padding-top: 6px; padding-bottom: 6px; background: var(--bg-elevated); font-size: 11.5px; font-weight: 700; color: var(--text-muted); position: sticky; top: 0; z-index: 2; }
         .pj-row:not(.pj-headrow):hover { background: var(--bg-hover); }
@@ -1017,7 +1023,7 @@
         .pj-health .vdot.h-risk { background: #d97706; } .pj-health .vdot.h-off { background: #e11d48; }
         .pj-health .vdot.h-none { background: var(--text-muted); }
         @media (max-width: 1250px) {
-            .pj-row { grid-template-columns: minmax(160px, 1fr) 82px 54px minmax(0, 4fr) 34px; }
+            .pj-row { grid-template-columns: minmax(160px, 1fr) 82px 54px minmax(0, 4fr) 62px; }
             .pj-row > .pj-c-prog, .pj-row > .pj-c-open { display: none; }
         }
         @media (max-width: 760px) {
@@ -1050,7 +1056,12 @@
         .admin-table th.sortable:hover { color: var(--text); }
         .admin-table th.sort-active { color: var(--accent); }
         .admin-table th.sort-active::after { content: ' ↓'; }
-        .pcard-actions { display: flex; gap: 2px; margin-left: auto; }
+        .pcard-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
+        .pcard-actions .h-pill { margin-right: 4px; }
+        .pcard-top .pcard-edit { align-self: flex-start; flex: 0 0 auto; margin: -4px -6px 0 0; }
+        .pcard-add-person { width: 26px; height: 26px; border-radius: 50%; border: 1px dashed var(--border); background: none; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; margin-left: -4px; }
+        .pcard-add-person:hover { border-style: solid; border-color: var(--accent); color: var(--accent); }
+        .pcard-add-person svg { width: 13px; height: 13px; }
 
         .bulk-bar { position: sticky; bottom: 18px; align-self: center; display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 16px; background: var(--bg-elevated); border: 1px solid var(--accent); border-radius: 12px; box-shadow: var(--shadow); font-size: 13px; font-weight: 600; z-index: 20; }
         .bulk-bar[hidden] { display: none; }
@@ -1160,6 +1171,17 @@
         .vt-panel-foot .add-box { margin: 0; }
         .vt-panel-foot input[type="text"] { border-radius: 8px; }
         table.vt { table-layout: fixed; }
+        table.vt tr.vt-group > td { background: var(--bg-hover); font-weight: 700; padding: 7px 12px; }
+        table.vt tr.vt-group .vt-group-name { margin-right: 8px; }
+        .vt-ver { margin-left: 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; white-space: nowrap; flex-shrink: 0; }
+        #vpLead.filter-on, #vpDept.filter-on { border-color: var(--accent); color: var(--accent); }
+        .vt-dept-sel { font-size: 12px; padding: 3px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-muted); max-width: 100%; cursor: pointer; }
+        .vt-dept-sel.on { color: var(--text); font-weight: 600; }
+        .vp-hero-actions .vpm-status-sel { height: 30px; font-size: 12px; }
+        .btn-danger-soft:hover { color: #e11d48; border-color: #e11d48; }
+        table.vt td.vt-lead .module-lead-btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lead-item { display: flex; align-items: center; gap: 8px; }
+        .lead-item .row-avatar { width: 20px; height: 20px; font-size: 9.5px; flex-shrink: 0; }
         table.vt > tbody > tr > td, table.vt > thead > tr > th { overflow: hidden; text-overflow: ellipsis; }
         table.vt > tbody > tr.vt-detail > td { overflow: visible; }
         .vt-sub { table-layout: fixed; }
@@ -1211,6 +1233,14 @@
         .vt-mod.drop-after > td, .vt-detail.drop-after > td { box-shadow: inset 0 -3px 0 0 var(--accent); }
         .vt-mod.drop-into > td, .vt-detail.drop-into > td { background: var(--accent-soft); }
         .vp-grip.off { opacity: .3; cursor: not-allowed; }
+        .pcard-top .pj-grip { align-self: flex-start; margin: -2px -6px 0 -8px; }
+        .pj-main .pj-grip { margin-right: 4px; }
+        .pj-cell .pj-grip { margin: 0 2px 0 -8px; }
+        .pj-dragging { opacity: .45; }
+        .pcard.pj-drop-before { box-shadow: -4px 0 0 0 var(--accent); }
+        .pcard.pj-drop-after { box-shadow: 4px 0 0 0 var(--accent); }
+        .pj-row.pj-drop-before, tr.pj-drop-before > td { box-shadow: inset 0 3px 0 0 var(--accent); }
+        .pj-row.pj-drop-after, tr.pj-drop-after > td { box-shadow: inset 0 -3px 0 0 var(--accent); }
         .vpm-status-sel, .vp-state-sel { appearance: auto; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-hover); color: var(--text-muted); cursor: pointer; text-transform: capitalize; }
         .vpm-status-sel.s-in-progress { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
         .vpm-status-sel.s-completed { background: rgba(22, 163, 74, .14); color: #16a34a; border-color: transparent; }
@@ -1281,9 +1311,9 @@
         body:not([data-role]) .app { visibility: hidden; }
         .mono-box { font-family: ui-monospace, Consolas, monospace; font-size: 12px !important; word-break: break-all; }
         body[data-role="employee"] [data-admin] { display: none !important; }
+        .vp-back svg { width: 15px; height: 15px; transform: rotate(180deg); }
         body[data-role="admin"] [data-employee] { display: none !important; }
         body:not([data-manager="1"]) [data-manager] { display: none !important; } /* only project admins */
-        body[data-role="employee"] .btn-icon-delete { display: none; }
         .sb-foot { display: flex; align-items: center; gap: 8px; }
         .sb-foot .sb-user { flex: 1; min-width: 0; }
         .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 600; padding: 16px; }
@@ -1408,6 +1438,7 @@
             <span class="muted tp-proj" id="tpProject"></span>
             <div class="tp-head-actions">
                 <a class="icon-action" id="tpOpenPlane" target="_blank" rel="noopener" title="Open in Plane"><i data-icon="external"></i></a>
+                <button type="button" class="icon-action danger" id="tpDelete" title="Delete task"><i data-icon="trash"></i></button>
                 <button type="button" class="icon-action" id="tpClose" title="Close (Esc)"><i data-icon="x"></i></button>
             </div>
         </div>
@@ -1783,6 +1814,7 @@
                 <div class="pt-search search-box"><i data-icon="search"></i><input type="text" id="pjSearch" placeholder="Search projects…   /"></div>
                 <div class="pt-filters">
                     <select id="pjSort" title="Sort">
+                        <option value="manual">Sort: My order</option>
                         <option value="name">Sort: Name</option>
                         <option value="progress">Sort: Progress</option>
                         <option value="overdue">Sort: Most overdue</option>
@@ -1796,6 +1828,12 @@
                         <option value="off">Off track</option>
                         <option value="done">Complete</option>
                         <option value="none">No tasks</option>
+                    </select>
+                    <select id="pjStatus" title="Project status">
+                        <option value="active">Status: Active</option>
+                        <option value="hold">On hold</option>
+                        <option value="closed">Closed</option>
+                        <option value="all">All projects</option>
                     </select>
                     <select id="pjDept" title="Department">
                         <option value="all">Department: All</option>
@@ -1847,9 +1885,18 @@
                     <div class="pt-filters">
                         <select id="vpProject" title="Project"></select>
                         <select id="vpVersion" title="Version"></select>
+                        <select id="vpLead" title="Show only the modules this person leads"></select>
+                        <select id="vpDept" title="Show only the modules of one department">
+                            <option value="">Department: All</option>
+                            <option value="mechanical">Mechanical</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="software">Software</option>
+                            <option value="none">No department</option>
+                        </select>
                         <button type="button" class="btn btn-secondary" id="vpClearFilters" hidden>Clear filters</button>
                     </div>
                     <div class="pt-actions">
+                        <button type="button" class="btn btn-secondary vp-back" id="vpBackProjects" data-admin title="Back to the Projects page"><i data-icon="chevron"></i>Projects</button>
                         <button type="button" class="btn btn-secondary btn-icon" id="vpExpand" title="Expand all" aria-label="Expand all"><i data-icon="expandAll"></i></button>
                         <button type="button" class="btn btn-secondary btn-icon" id="vpCollapse" title="Collapse all" aria-label="Collapse all"><i data-icon="collapseAll"></i></button>
                         <button type="button" class="btn btn-primary" id="vpNewVersion">+ New version</button>
@@ -2017,7 +2064,7 @@
     <div class="modal-overlay" id="projectModalOverlay" hidden>
         <div class="modal-card wide">
             <div class="modal-head">
-                <h3>New Project</h3>
+                <h3 id="projectModalTitle">New Project</h3>
                 <button type="button" class="icon-btn" id="btnCloseProjectModal" title="Close">✕</button>
             </div>
             <div class="modal-body">
@@ -2041,7 +2088,11 @@
                     <span>Sections <span class="hint">(optional)</span></span>
                     <div class="cat-opts" id="newProjectDepts"></div>
                 </div>
-                <div class="form-row">
+                <div class="form-row" id="newProjectStatusRow" hidden>
+                    <span>Status</span>
+                    <div class="cat-opts" id="newProjectStatus"></div>
+                </div>
+                <div class="form-row" id="newProjectMembersRow">
                     <div class="pick-head"><span>Members (optional — you are added as admin)</span><span class="hint" id="newProjectMembersCount"></span></div>
                     <input type="text" class="pick-search" data-pick-search="newProjectMembers" placeholder="Search members…">
                     <div class="pick-list" id="newProjectMembers"></div>
@@ -2480,6 +2531,9 @@
                 taskQuery: '',
                 scope: loadScope(), // { projectId, versionId, moduleId } picked in the top bar
                 moduleOrder: {}, // versionId -> [moduleId] in the order the admin arranged them
+                projectOrder: [], // projectId[] in the order the admin dragged them on the Projects page
+                moduleLeads: {}, // moduleId -> dashboard userId, for leads who have no Plane account
+                planMeta: { versions: {}, modules: {} }, // version work state and module department, kept by our server
                 members: [],
                 projects: [],
                 modules: [],
@@ -2787,6 +2841,7 @@
                     projectName: project.name,
                     status: raw.status || 'backlog',
                     leadId: raw.lead || null,
+                    planeLeadId: raw.lead || null, // leadId may be swapped for 'dash:<id>' by applyDashModuleLeads
                     startDate: raw.start_date || null,
                     dueDate: raw.target_date || null,
                     total: raw.total_issues,
@@ -3440,6 +3495,8 @@
             }
 
             function openProjectModal() {
+                editProjectId = null;
+                setProjectModalMode(false);
                 el('projectModalError').textContent = '';
                 el('newProjectName').value = '';
                 el('newProjectIdentifier').value = '';
@@ -3455,10 +3512,68 @@
                 el('newProjectName').focus();
             }
 
+            // Edit mode reuses the New Project form: name, identifier, description, category, sections, status.
+            let editProjectId = null;
+            function setProjectModalMode(edit) {
+                el('projectModalTitle').textContent = edit ? 'Edit project' : 'New Project';
+                el('btnSubmitProject').textContent = edit ? 'Save' : 'Create';
+                el('newProjectMembersRow').hidden = edit;
+                el('newProjectStatusRow').hidden = !edit;
+            }
+            function openProjectEdit(pid) {
+                const p = projectById(pid);
+                if (!p) return;
+                editProjectId = pid;
+                setProjectModalMode(true);
+                el('projectModalError').textContent = '';
+                el('newProjectName').value = p.name || '';
+                el('newProjectIdentifier').value = p.identifier || '';
+                projectIdentifierTouched = true;
+                el('newProjectDesc').value = p.description || '';
+                newProject = { cat: catOf(pid), depts: deptsOf(pid).slice(), status: projectStatus(pid) };
+                renderNewProjectCat();
+                el('projectModalOverlay').hidden = false;
+                el('newProjectName').focus();
+            }
+            async function submitProjectEdit() {
+                const p = projectById(editProjectId);
+                if (!p) { closeProjectModal(); return; }
+                const name = el('newProjectName').value.trim();
+                const identifier = el('newProjectIdentifier').value.trim().toUpperCase();
+                const description = el('newProjectDesc').value.trim();
+                if (!name || !identifier) { el('projectModalError').textContent = 'Project name and identifier are required.'; return; }
+                const body = {};
+                if (name !== p.name) body.name = name;
+                if (identifier !== (p.identifier || '')) body.identifier = identifier;
+                if (description !== (p.description || '')) body.description = description;
+                const btn = el('btnSubmitProject');
+                btn.disabled = true;
+                el('projectModalError').textContent = '';
+                try {
+                    if (Object.keys(body).length) {
+                        await apiPatch(wsForProject(p.id), `/projects/${p.id}/`, body);
+                        Object.assign(p, body);
+                        state.allTasks.forEach(t => { if (t.projectId === p.id) t.projectName = p.name; });
+                    }
+                    const cur = state.categories[p.id] || {};
+                    const sameDepts = newProject.depts.slice().sort().join() === (cur.depts || []).slice().sort().join();
+                    if (newProject.cat !== (cur.category || '') || !sameDepts || newProject.status !== projectStatus(p.id)) await saveProjectCategory(p.id, newProject.cat, newProject.depts.slice(), newProject.status);
+                    closeProjectModal();
+                    toast(`Project “${p.name}” saved`, 'ok');
+                    renderAdminViews();
+                    renderBody();
+                } catch (e) {
+                    el('projectModalError').textContent = 'Could not save: ' + e.message + (body.identifier ? ' — the identifier may already be used by another project.' : '');
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+
             let newProject = { cat: '', depts: [] };
             function renderNewProjectCat() {
                 el('newProjectCat').innerHTML = Object.entries(PJ_CATS).map(([k, c]) => `<button type="button" class="cat-toggle${newProject.cat === k ? ' on' : ''}" data-new-cat="${k}" style="${newProject.cat === k ? `border-color:${c.color};color:${c.color};background:color-mix(in srgb, ${c.color} 16%, transparent)` : ''}">${c.one}</button>`).join('');
                 el('newProjectDepts').innerHTML = Object.entries(PJ_DEPTS).map(([k, l]) => `<button type="button" class="cat-toggle${newProject.depts.includes(k) ? ' on' : ''}" data-new-dept="${k}">${l}</button>`).join('');
+                el('newProjectStatus').innerHTML = Object.entries(PJ_STATUS).map(([k, x]) => `<button type="button" class="cat-toggle${newProject.status === k ? ' on' : ''}" data-new-status="${k}" style="${newProject.status === k ? `border-color:${x.color};color:${x.color};background:color-mix(in srgb, ${x.color} 16%, transparent)` : ''}">${x.label}</button>`).join('');
             }
 
             function closeProjectModal() {
@@ -3538,8 +3653,9 @@
             }
 
             function deleteCell(t) {
+                if (!canManageProject(t.projectId)) return '';
                 const deleting = isFieldSaving(t.id, 'delete');
-                return `<button type="button" class="btn-icon-delete" data-task-id="${t.id}" ${deleting ? 'disabled' : ''} title="Delete task">🗑</button>`;
+                return `<button type="button" class="btn-icon-delete" data-task-id="${t.id}" ${deleting ? 'disabled' : ''} title="Delete task" aria-label="Delete task">${icon('trash')}</button>`;
             }
 
             async function deleteTask(task) {
@@ -3549,12 +3665,16 @@
                 try {
                     await apiDelete(wsForProject(task.projectId), `/projects/${task.projectId}/issues/${task.id}/`);
                     state.allTasks = state.allTasks.filter(x => x.id !== task.id);
+                    admin.versionTasks.forEach(vt => { if (vt.ids) vt.ids.delete(task.id); });
+                    if (tp.task && tp.task.id === task.id) { tp.descDirty = false; closeTaskPanel(); }
+                    toast(`Task “${task.name}” deleted`, 'ok');
                 } catch (e) {
                     alert('Could not delete the task — it has not been removed from Plane: ' + e.message);
                 } finally {
                     savingFields.delete(`${task.id}:delete`);
                     renderBody();
                     renderAnalytics();
+                    renderAdminViews();
                 }
             }
 
@@ -4148,7 +4268,8 @@
                 const proj = projectById(t.projectId) || {};
                 el('tpKey').textContent = proj.identifier && t.sequenceId ? `${proj.identifier}-${t.sequenceId}` : (proj.identifier || 'Task');
                 el('tpProject').textContent = t.projectName || proj.name || '';
-                el('tpOpenPlane').href = `${(state.session && state.session.planeWeb) || 'https://app.plane.so'}/${encodeURIComponent(tpWs(t).slug)}/projects/${t.projectId}/issues/${t.id}`;
+                el('tpDelete').hidden = !canManageProject(t.projectId);
+                el('tpOpenPlane').href =`${(state.session && state.session.planeWeb) || 'https://app.plane.so'}/${encodeURIComponent(tpWs(t).slug)}/projects/${t.projectId}/issues/${t.id}`;
                 el('tpTitle').value = t.name;
                 fitTitle();
                 renderTpProps();
@@ -4366,6 +4487,7 @@
                     openTaskPanel(o.dataset.openTask);
                 });
                 el('tpClose').addEventListener('click', closeTaskPanel);
+                el('tpDelete').addEventListener('click', () => { if (tp.task) deleteTask(tp.task); });
                 el('tpOverlay').addEventListener('click', closeTaskPanel);
                 document.addEventListener('keydown', (e) => {
                     if (e.key !== 'Escape' || !tp.task) return;
@@ -4595,6 +4717,7 @@
             function inScope(t) {
                 const s = state.scope;
                 if (s.projectId && t.projectId !== s.projectId) return false;
+                if (!s.projectId && !projectActive(t.projectId)) return false; // On hold / Closed: only when picked explicitly
                 if (s.moduleId) {
                     const e = state.moduleTasks.get(s.moduleId);
                     return e && e.error ? true : !!(e && e.ids && e.ids.has(t.id));
@@ -4644,7 +4767,9 @@
                 if (bar.hidden) return;
                 const opt = (v, label, cur) => `<option value="${escapeHtml(v)}"${v === cur ? ' selected' : ''}>${escapeHtml(label)}</option>`;
                 const ps = el('scopeProject');
-                ps.innerHTML = opt('', 'All projects', s.projectId) + state.projects.slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => opt(p.id, p.name, s.projectId)).join('');
+                const byName = state.projects.slice().sort((a, b) => a.name.localeCompare(b.name));
+                const group = (st, label) => { const l = byName.filter(p => projectStatus(p.id) === st); return l.length ? `<optgroup label="${label}">${l.map(p => opt(p.id, p.name, s.projectId)).join('')}</optgroup>` : ''; };
+                ps.innerHTML = opt('', 'All active projects', s.projectId) + byName.filter(p => projectActive(p.id)).map(p => opt(p.id, p.name, s.projectId)).join('') + group('hold', 'On hold') + group('closed', 'Closed');
                 ps.classList.toggle('on', !!s.projectId);
 
                 const versions = s.projectId ? scopeVersions() : [];
@@ -5166,13 +5291,18 @@
                 const m = state.modules.find(x => x.id === state.moduleLeadTarget);
                 if (!m) return;
                 const q = (query || '').trim().toLowerCase();
-                const members = state.members.slice().sort((a, b) => a.name.localeCompare(b.name))
+                const roster = membersOfProject(m.projectId); // only this project's members, once known
+                const slug = activeWorkspace().slug, pid = String(m.projectId).toLowerCase();
+                const onProject = (u) => { const a = (admin.accounts || []).find(x => x.id === u.id); return !a || ((a.access || {})[slug] || []).includes(pid); };
+                const members = state.members.filter(x => !roster || roster.has(x.id) || x.id === m.leadId)
+                    .concat(state.dashUsers.filter(onProject).map(u => ({ id: 'dash:' + u.id, name: u.name, email: '' })))
+                    .sort((a, b) => a.name.localeCompare(b.name))
                     .filter(x => !q || x.name.toLowerCase().includes(q) || (x.email || '').toLowerCase().includes(q));
                 const items = (q ? [] : [{ id: '', name: 'No lead' }]).concat(members);
                 el('moduleLeadList').innerHTML = items.map(x => `
-                    <div class="status-menu-item${(x.id || null) === m.leadId ? ' current' : ''}" data-member-id="${escapeHtml(x.id)}">
-                        <span>${escapeHtml(x.name)}</span>
-                    </div>`).join('') || '<div class="empty-hint" style="padding:6px;">No members</div>';
+                    <div class="status-menu-item lead-item${(x.id || null) === m.leadId ? ' current' : ''}" data-member-id="${escapeHtml(x.id)}">
+                        ${x.id ? `<span class="row-avatar" style="background:${hashColor(x.name)}">${escapeHtml(x.name.trim().charAt(0).toUpperCase())}</span>` : ''}<span>${escapeHtml(x.name)}</span>
+                    </div>`).join('') || `<div class="empty-hint" style="padding:6px;">${roster && !q ? 'This project has no members yet — add them on the Projects page.' : 'No members'}</div>`;
             }
 
             function openModuleLeadMenu(m, anchorEl, point) {
@@ -5193,15 +5323,26 @@
             // Optimistic: the new lead shows at once; if Plane rejects it, the old lead comes back.
             async function saveModuleLead(m, memberId) {
                 if ((memberId || null) === m.leadId) return;
-                const prev = m.leadId;
+                const prev = { leadId: m.leadId, planeLeadId: m.planeLeadId, dash: state.moduleLeads[m.id] };
+                const dashId = memberId && memberId.startsWith('dash:') ? memberId.slice(5) : null;
+                const planeId = memberId && !dashId ? memberId : null;
                 m.leadId = memberId || null;
                 state.savingLeads.add(m.id);
                 renderModulesKeepScroll();
                 if (admin.view === 'version' && admin.drawer) renderDrawer();
                 try {
-                    await apiPatch(wsForProject(m.projectId), `/projects/${m.projectId}/modules/${m.id}/`, { lead: m.leadId });
+                    if (planeId !== (m.planeLeadId || null)) {
+                        await apiPatch(wsForProject(m.projectId), `/projects/${m.projectId}/modules/${m.id}/`, { lead: planeId });
+                        m.planeLeadId = planeId;
+                    }
+                    if (dashId !== (state.moduleLeads[m.id] || null)) {
+                        await dashJson('PUT', `/api/module-leads/${encodeURIComponent(activeWorkspace().slug)}/${m.id}`, { projectId: m.projectId, userId: dashId });
+                        if (dashId) state.moduleLeads[m.id] = dashId; else delete state.moduleLeads[m.id];
+                    }
                 } catch (e) {
-                    m.leadId = prev;
+                    m.leadId = prev.leadId;
+                    m.planeLeadId = prev.planeLeadId;
+                    if (prev.dash) state.moduleLeads[m.id] = prev.dash; else delete state.moduleLeads[m.id];
                     alert('Could not assign the module lead — it has not been changed in Plane: ' + e.message);
                 } finally {
                     state.savingLeads.delete(m.id);
@@ -5905,12 +6046,14 @@
                 el('projectModalOverlay').addEventListener('click', (e) => {
                     const c = e.target.closest('[data-new-cat]');
                     const d = e.target.closest('[data-new-dept]');
+                    const st = e.target.closest('[data-new-status]');
+                    if (st) { newProject.status = st.dataset.newStatus; renderNewProjectCat(); return; }
                     if (c) { newProject.cat = c.dataset.newCat; el('projectModalError').textContent = ''; }
                     else if (d) newProject.depts = newProject.depts.includes(d.dataset.newDept) ? newProject.depts.filter(x => x !== d.dataset.newDept) : newProject.depts.concat(d.dataset.newDept);
                     if (c || d) renderNewProjectCat();
                 });
                 el('btnCancelProject').addEventListener('click', closeProjectModal);
-                el('btnSubmitProject').addEventListener('click', submitNewProject);
+                el('btnSubmitProject').addEventListener('click', () => (editProjectId ? submitProjectEdit() : submitNewProject()));
                 el('newProjectName').addEventListener('input', () => {
                     if (!projectIdentifierTouched) el('newProjectIdentifier').value = suggestIdentifier(el('newProjectName').value);
                 });
@@ -6712,6 +6855,7 @@
                 pjCat: (() => { const v = new URLSearchParams(location.search).get('cat'); return ['machine', 'robot', 'office', 'none'].includes(v) ? v : 'all'; })(),
                 pjHealth: new URLSearchParams(location.search).get('health') || 'all',
                 pjDept: new URLSearchParams(location.search).get('dept') || 'all',
+                pjStatus: new URLSearchParams(location.search).get('status') || 'active',
                 pjLate: new URLSearchParams(location.search).get('late') === '1',
                 seq: 0, loading: false, loaded: false, loadedAt: 0, pjView: (() => { const v = localStorage.getItem('planeDash_projectsView'); return v === 'expanded' ? 'compact' : (['table', 'compact'].includes(v) ? v : 'cards'); })(),
                 projectMembers: new Map(), // projectId -> Map(userId -> project role)
@@ -6723,6 +6867,8 @@
                 ovHealth: 'all', accounts: [], accEdit: null,
                 drawer: null, // { kind: 'project' | 'member' | 'version', id }
                 versionTasks: new Map(), // cycle id -> { loading } | { ids: Set } | { error }
+                vpLead: '', // Versions tasks lead filter: '' all · 'none' no lead · member id
+                vpDept: '', // Versions tasks department filter: '' all · 'none' · mechanical | electronics | software
                 dpQuery: '', vmQuery: {}, vmOpen: new Set(), vmBusy: new Set(),
                 cmdkItems: [], cmdkSel: 0
             };
@@ -6740,8 +6886,8 @@
                 const ws = activeWorkspace();
                 const url = path.startsWith('/admin/') ? path : planeUrl(ws, path);
                 let res = await dashFetch(url, method, body);
-                for (let attempt = 1; res.status === 429 && method === 'GET' && attempt <= 3; attempt++) {
-                    await new Promise(r => setTimeout(r, 1500 * attempt + Math.random() * 800)); // Plane allows 60 requests/min per key
+                for (let attempt = 1; res.status === 429 && attempt <= (method === 'GET' ? 3 : 5); attempt++) { // a 429 was refused before any change, so writes retry safely too
+                    await new Promise(r => setTimeout(r, (method === 'GET' ? 1500 : 3000) * attempt + Math.random() * 800)); // Plane allows 60 requests/min per key
                     res = await dashFetch(url, method, body);
                 }
                 const text = await res.text();
@@ -7047,7 +7193,7 @@
 
             function renderNavCounts() {
                 const stats = computeAdminStats();
-                el('navCountTasks').textContent = state.allTasks.length || '';
+                el('navCountTasks').textContent = state.allTasks.filter(t => projectActive(t.projectId)).length || ''; // On hold / Closed projects are set aside
                 el('navCountProjects').textContent = state.projects.length || '';
                 el('navCountVersions').textContent = admin.cycles.length || '';
                 el('navCountMembers').textContent = humans().length || '';
@@ -7132,20 +7278,29 @@
                     </div>`).join('') : '<div class="list-empty">Nobody has open tasks.</div>';
             }
 
-            async function saveProjectCategory(pid, category, depts) {
+            async function saveProjectCategory(pid, category, depts, status) {
                 const slug = activeWorkspace().slug;
                 const prev = state.categories[pid];
-                state.categories[pid] = { category, depts };
+                if (status === undefined) status = projectStatus(pid);
+                state.categories[pid] = { category, depts, status };
                 renderAdminViews();
+                refreshProjectStatusViews();
                 try {
-                    const saved = await dashJson('PUT', `/api/categories/${encodeURIComponent(slug)}/${pid}`, { category, depts });
-                    if (saved && (saved.category || (saved.depts || []).length)) state.categories[pid] = saved; else delete state.categories[pid];
+                    const saved = await dashJson('PUT', `/api/categories/${encodeURIComponent(slug)}/${pid}`, { category, depts, status });
+                    if (saved && (saved.category || (saved.depts || []).length || (saved.status && saved.status !== 'active'))) state.categories[pid] = saved; else delete state.categories[pid];
                 } catch (e) {
                     if (prev) state.categories[pid] = prev; else delete state.categories[pid];
                     alert('Could not save category: ' + e.message);
                 }
                 renderAdminViews();
+                refreshProjectStatusViews();
             }
+            // ---------- Project status: Active · On hold (later) · Closed ----------
+            const PJ_STATUS = { active: { label: 'Active', color: '#16a34a' }, hold: { label: 'On hold', color: '#d97706' }, closed: { label: 'Closed', color: '#64748b' } };
+            const projectStatus = (pid) => ((state.categories[pid] || {}).status) || 'active';
+            const projectActive = (pid) => projectStatus(pid) === 'active';
+            const statusPill = (pid) => { const st = projectStatus(pid); return st === 'active' ? '' : `<span class="pj-status-pill" style="--k:${PJ_STATUS[st].color}">${PJ_STATUS[st].label}</span>`; };
+            function refreshProjectStatusViews() { scopeValidate(); renderScopeBar(); renderBody(); renderBoard(); if (admin.view === 'report') renderReport(); }
             const PJ_CATS = {
                 machine: { label: 'Machines', one: 'Machine', color: '#f59e0b', ico: 'catMachine' },
                 robot: { label: 'Robots', one: 'Robot', color: '#a855f7', ico: 'catRobot' },
@@ -7161,7 +7316,7 @@
                 try {
                     const u = new URL(location.href);
                     const put = (k, v, def) => { if (v && v !== def) u.searchParams.set(k, v); else u.searchParams.delete(k); };
-                    put('cat', admin.pjCat, 'all'); put('health', admin.pjHealth, 'all'); put('dept', admin.pjDept, 'all'); put('late', admin.pjLate ? '1' : '', '');
+                    put('cat', admin.pjCat, 'all'); put('health', admin.pjHealth, 'all'); put('dept', admin.pjDept, 'all'); put('status', admin.pjStatus, 'active'); put('late', admin.pjLate ? '1' : '', '');
                     history.replaceState(null, '', u);
                 } catch (e) { /* file:// or blocked */ }
             }
@@ -7192,10 +7347,14 @@
                     .filter(p => matches(q, p.name, p.identifier || '', p.description || ''))
                     .filter(p => admin.pjCat === 'all' || (admin.pjCat === 'none' ? !catOf(p.id) : catOf(p.id) === admin.pjCat))
                     .filter(p => admin.pjDept === 'all' || deptsOf(p.id).includes(admin.pjDept))
+                    .filter(p => admin.pjStatus === 'all' || projectStatus(p.id) === admin.pjStatus)
                     .map(p => ({ p, st: s.byProject.get(p.id), roster: membersOfProject(p.id) }))
                     .filter(({ st }) => (admin.pjHealth === 'all' || health(st).key === admin.pjHealth) && (!admin.pjLate || st.overdue > 0));
                 const pctOf = (st) => (st.total ? st.done / st.total : -1);
+                const rank = projectRank();
+                const manual = sort === 'manual';
                 list.sort((a, b) => {
+                    if (manual) return (rank(a.p.id) - rank(b.p.id)) || a.p.name.localeCompare(b.p.name);
                     if (sort === 'progress') return pctOf(b.st) - pctOf(a.st);
                     if (sort === 'overdue') return b.st.overdue - a.st.overdue;
                     if (sort === 'members') return ((b.roster && b.roster.size) || 0) - ((a.roster && a.roster.size) || 0);
@@ -7208,29 +7367,29 @@
                 el('pjTableWrap').hidden = mode !== 'table';
                 el('pjCompact').hidden = mode !== 'compact';
                 if (mode === 'table') { renderProjectsTable(list, sort); return; }
-                if (mode === 'compact') { renderProjectsCompact(list); return; }
+                if (mode === 'compact') { renderProjectsCompact(list, manual); return; }
                 el('pjGrid').innerHTML = list.map(({ p, st, roster }) => {
                     const h = health(st);
                     const pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
                     const versions = admin.cycles.filter(c => c.projectId === p.id).length;
                     return `
-                    <div class="pcard${catOf(p.id) ? ' has-cat' : ''}" data-open-project="${p.id}"${catOf(p.id) ? ` style="--cat:${PJ_CATS[catOf(p.id)].color}"` : ''}>
+                    <div class="pcard${catOf(p.id) ? ' has-cat' : ''}" data-open-project="${p.id}" data-pj-drop="${p.id}"${catOf(p.id) ? ` style="--cat:${PJ_CATS[catOf(p.id)].color}"` : ''}>
                         <div class="pcard-top">
-                            ${projectBadge(p)}
+                            <span class="vp-grip pj-grip${manual ? '' : ' off'}" draggable="${manual}" data-act="pj-grip" data-pj-drag="${p.id}" title="${manual ? 'Drag to change the project order' : 'Choose Sort: My order to drag projects'}">${icon('grip')}</span>
                             <div class="pcard-title">
-                                <div class="project-name">${escapeHtml(p.name)}</div>
+                                <div class="project-name">${escapeHtml(p.name)}${statusPill(p.id)}</div>
                                 <div class="project-meta">${escapeHtml(p.identifier || '')} · ${versions} ${versions === 1 ? 'version' : 'versions'}</div>
                             </div>
+                            <button type="button" class="icon-action pcard-edit" data-act="edit-project" data-project-id="${p.id}" title="Edit project — name, identifier, description, category, status">${icon('edit')}</button>
                         </div>
                         ${catOf(p.id) || deptsOf(p.id).length ? `<div class="pcard-tags">${catPill(p.id)}${deptChips(p.id)}</div>` : ''}
                         ${p.description ? `<div class="pcard-desc">${escapeHtml(p.description)}</div>` : ''}
                         <div class="meter-track"><div class="meter-fill" style="width:${pct}%"></div></div>
                         <div class="meter-caption"><span>${st.done} of ${st.total} done${st.overdue ? ` · <span class="text-danger">${st.overdue} overdue</span>` : ''}</span><span>${pct}%</span></div>
                         <div class="pcard-foot">
-                            <span class="members-cell">${memberCountChip(roster)}${roster && roster.size ? avatarStack([...roster.keys()], 5) : ''}</span>
-                            <span class="pill h-pill h-${h.key}">${h.label}</span>
+                            <span class="members-cell">${memberCountChip(roster)}${roster && roster.size ? avatarStack([...roster.keys()], 5) : ''}<button type="button" class="pcard-add-person" data-act="assign-project" data-project-id="${p.id}" title="Add a person to this project" aria-label="Add a person to this project">${icon('userPlus')}</button></span>
                             <div class="pcard-actions">
-                                <button type="button" class="icon-action" data-act="assign-project" data-project-id="${p.id}" title="Add members">${icon('userPlus')}</button>
+                                <span class="pill h-pill h-${h.key}">${h.label}</span>
                                 <button type="button" class="icon-action" data-act="version-for-project" data-project-id="${p.id}" title="New version">${icon('tagPlus')}</button>
                             </div>
                         </div>
@@ -7239,7 +7398,7 @@
             }
 
             // Compact: one line per project; its versions sit beside it as small progress chips.
-            function renderProjectsCompact(list) {
+            function renderProjectsCompact(list, manual) {
                 const order = { active: 0, upcoming: 1, draft: 2, completed: 3 };
                 const head = `<div class="pj-row pj-headrow"><span>Project</span><span class="pj-c-health">Health</span><span class="pj-c-prog">Progress</span><span class="pj-c-open" title="Open tasks · overdue">Open · late</span><span>Team</span><span>Versions — progress · modules · tasks</span><span></span></div>`;
                 el('pjCompact').innerHTML = head + list.map(({ p, st, roster }) => {
@@ -7263,8 +7422,8 @@
                     }).join('');
                     const strip = chips || (admin.loaded ? '' : skel(120));
                     return `
-                    <div class="pj-row">
-                        <div class="pj-main" data-open-project="${p.id}">${projectBadge(p, true)}<div style="min-width:0"><div class="person-name pj-ellipsis">${escapeHtml(p.name)}</div><div class="person-sub">${escapeHtml(p.identifier || '')} ${catPill(p.id)}</div></div></div>
+                    <div class="pj-row" data-pj-drop="${p.id}">
+                        <div class="pj-main" data-open-project="${p.id}"><span class="vp-grip pj-grip${manual ? '' : ' off'}" draggable="${manual}" data-act="pj-grip" data-pj-drag="${p.id}" title="${manual ? 'Drag to change the project order' : 'Choose Sort: My order to drag projects'}">${icon('grip')}</span><div style="min-width:0"><div class="person-name pj-ellipsis">${escapeHtml(p.name)}${statusPill(p.id)}</div><div class="person-sub">${escapeHtml(p.identifier || '')} ${catPill(p.id)}</div></div></div>
                         <span class="pj-c-health pj-health"><span class="vdot h-${h.key}"></span>${h.label}</span>
                         <div class="pj-c-prog">${progressCell(st.done, st.total)}</div>
                         <span class="pj-c-open pj-num" title="${st.open} open · ${st.overdue} overdue">${st.open}${st.overdue ? ` <span class="text-danger">· ${st.overdue}</span>` : ''}</span>
@@ -7274,19 +7433,20 @@
                             <button type="button" class="pj-add" data-act="version-for-project" data-project-id="${p.id}" title="New version">+ version</button>
                             ${loose ? `<span class="pj-note" title="Open tasks that belong to no version">${loose} unversioned</span>` : ''}
                         </div>
-                        <span class="pcard-actions"><button type="button" class="icon-action" data-act="assign-project" data-project-id="${p.id}" title="Add members">${icon('userPlus')}</button></span>
+                        <span class="pcard-actions"><button type="button" class="icon-action" data-act="edit-project" data-project-id="${p.id}" title="Edit project — name, identifier, description, category, status">${icon('edit')}</button><button type="button" class="icon-action" data-act="assign-project" data-project-id="${p.id}" title="Add members">${icon('userPlus')}</button></span>
                     </div>`;
                 }).join('') || `<div class="empty-hint" style="padding:14px">${state.projects.length ? 'No projects match your search.' : 'No projects loaded yet.'}</div>`;
             }
 
             function renderProjectsTable(list, sort) {
+                const manual = sort === 'manual';
                 el('pjTableWrap').querySelectorAll('th.sortable').forEach(th => th.classList.toggle('sort-active', th.dataset.sort === sort));
                 el('pjBody').innerHTML = list.map(({ p, st, roster }) => {
                     const h = health(st);
                     const versions = admin.cycles.filter(c => c.projectId === p.id).length;
                     return `
-                    <tr class="clickable" data-open-project="${p.id}">
-                        <td><div class="pj-cell">${projectBadge(p, true)}<span class="person-name">${escapeHtml(p.name)}</span><span class="id-badge">${escapeHtml(p.identifier || '')}</span></div></td>
+                    <tr class="clickable" data-open-project="${p.id}" data-pj-drop="${p.id}">
+                        <td><div class="pj-cell"><span class="vp-grip pj-grip${manual ? '' : ' off'}" draggable="${manual}" data-act="pj-grip" data-pj-drag="${p.id}" title="${manual ? 'Drag to change the project order' : 'Choose Sort: My order to drag projects'}">${icon('grip')}</span><span class="person-name">${escapeHtml(p.name)}</span>${statusPill(p.id)}<span class="id-badge">${escapeHtml(p.identifier || '')}</span></div></td>
                         <td><span class="pill h-pill h-${h.key}">${h.label}</span></td>
                         <td>${progressCell(st.done, st.total)}</td>
                         <td>${st.open}</td>
@@ -7295,6 +7455,7 @@
                         <td>${admin.loaded ? versions : skel(20)}</td>
                         <td class="muted">${relTime(st.last || p.updated_at)}</td>
                         <td class="row-actions" style="white-space:nowrap">
+                            <button type="button" class="icon-action" data-act="edit-project" data-project-id="${p.id}" title="Edit project — name, identifier, description, category, status">${icon('edit')}</button>
                             <button type="button" class="icon-action" data-act="assign-project" data-project-id="${p.id}" title="Add members">${icon('userPlus')}</button>
                             <button type="button" class="icon-action" data-act="version-for-project" data-project-id="${p.id}" title="New version">${icon('tagPlus')}</button>
                         </td>
@@ -7406,13 +7567,18 @@
                 const pct = st.total ? Math.round((st.done / st.total) * 100) : 0;
                 const planeUrl = `${(state.session && state.session.planeWeb) || 'https://app.plane.so'}/${encodeURIComponent(activeWorkspace().slug)}/projects/${pid}/issues/`;
                 drawerHead(projectBadge(p), escapeHtml(p.name), `<span class="id-badge">${escapeHtml(p.identifier || '')}</span><span class="pill h-pill h-${health(st).key}">${health(st).label}</span>`,
-                    `<a class="icon-action" href="${planeUrl}" target="_blank" rel="noopener" title="Open in Plane">${icon('external')}</a>`);
+                    `${isAdmin() ? `<button type="button" class="icon-action" data-act="edit-project" data-project-id="${pid}" title="Edit project">${icon('edit')}</button>` : ''}<a class="icon-action" href="${planeUrl}" target="_blank" rel="noopener" title="Open in Plane">${icon('external')}</a>`);
                 const members = roster ? [...roster.entries()].map(([uid, role]) => ({ m: memberById(uid) || { id: uid, name: 'Unknown' }, role }))
                     .sort((a, b) => b.role - a.role || fullName(a.m).localeCompare(fullName(b.m))) : [];
                 const versions = admin.cycles.filter(c => c.projectId === pid);
                 el('drawerBody').innerHTML = `
                     ${miniStats([['Tasks', st.total], ['Done', pct + '%'], ['Overdue', st.overdue, st.overdue ? 'text-danger' : ''], ['Members', roster ? roster.size : '—']])}
                     ${isAdmin() ? `
+                    <div class="drawer-section">
+                        <h4><span>Status</span></h4>
+                        <div class="cat-opts">${Object.entries(PJ_STATUS).map(([k, x]) => `<button type="button" class="cat-toggle${projectStatus(pid) === k ? ' on' : ''}" data-set-status="${k}" style="${projectStatus(pid) === k ? `border-color:${x.color};color:${x.color};background:color-mix(in srgb, ${x.color} 16%, transparent)` : ''}">${x.label}</button>`).join('')}</div>
+                        <div class="hint" style="margin-top:-2px">On hold and Closed projects are left out of All Tasks, Board, Timeline and Report — pick the project in the Project selector to open it.</div>
+                    </div>
                     <div class="drawer-section">
                         <h4><span>Category</span></h4>
                         <div class="cat-opts">${Object.entries(PJ_CATS).map(([k, c]) => `<button type="button" class="cat-toggle${catOf(pid) === k ? ' on' : ''}" data-set-cat="${k}" style="${catOf(pid) === k ? `border-color:${c.color};color:${c.color};background:color-mix(in srgb, ${c.color} 16%, transparent)` : ''}">${c.one}</button>`).join('')}</div>
@@ -7581,7 +7747,7 @@
                 if (!q || matches(q, m.name)) return true;
                 return (moduleTasksOf(m) || []).some(t => matches(q, t.name, t.stateName));
             }
-            const VT_COLS = 7;
+            const VT_COLS = 9;
             const VT_TASK_COLS = [['task', 'Task'], ['assignee', 'Assignee'], ['status', 'Status'], ['priority', 'Priority'], ['startDate', 'Start Date'], ['dueDate', 'Due Date']];
             const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
             function vtSortTasks(tasks) {
@@ -7604,7 +7770,7 @@
                         <td>${priorityPill(t)}</td>
                         <td>${dateChip('task', t.id, 'startDate', t.startDate, 'Start')}</td>
                         <td>${dateChip('task', t.id, 'dueDate', t.dueDate, 'Due', isLateTask(t) ? 'late' : '')}</td>
-                        <td class="row-actions"><button type="button" class="icon-action danger" data-act="${removeAct}" ${mid ? `data-module-id="${mid}" ` : ''}data-task-id="${t.id}" title="${mid ? 'Remove from module' : 'Remove from version'}">${icon('x')}</button></td>
+                        <td class="row-actions"><button type="button" class="icon-action danger" data-act="${removeAct}" ${mid ? `data-module-id="${mid}" ` : ''}data-task-id="${t.id}" title="${mid ? 'Remove from module' : 'Remove from version'}">${icon('x')}</button>${canManageProject(t.projectId) ? `<button type="button" class="icon-action danger" data-act="vt-delete" data-task-id="${t.id}" title="Delete task">${icon('trash')}</button>` : ''}</td>
                     </tr>`).join('');
             }
             const vtDateState = (iso) => iso ? 'Set' : 'Not set';
@@ -7654,7 +7820,7 @@
             function vtSubTable(bodyRows, count, sw) {
                 const { key, dir } = admin.vtTaskSort;
                 const th = ([k, label]) => `<th class="sortable${key === k ? ' sort-active' : ''}${k === 'task' ? ' vt-th-task' : ''}" data-tsort="${k}" title="Sort by ${label}"><div class="th-inner"><span class="th-main"><span class="th-label">${label}${k === 'task' && sw ? `<span class="col-count">(${count})</span>` : ''}</span>${key === k ? `<span class="sort-mark">${dir === 1 ? '↑' : '↓'}</span>` : ''}</span>${k === 'task' && sw ? sw : ''}<button type="button" class="filter-icon-btn${admin.vtFilters[k] ? ' active' : ''}" data-vfilter="${k}" title="Filter ${label}">${FILTER_ICON_SVG}</button></div></th>`;
-                return `<table class="report-table vt-sub"><colgroup><col style="width:34px"><col><col style="width:128px"><col style="width:124px"><col style="width:90px"><col style="width:112px"><col style="width:112px"><col style="width:46px"></colgroup><thead><tr><th class="vt-grip-col"></th>${VT_TASK_COLS.map(th).join('')}<th class="actions-col"></th></tr></thead><tbody>${bodyRows}</tbody></table>`;
+                return `<table class="report-table vt-sub"><colgroup><col style="width:34px"><col><col style="width:128px"><col style="width:124px"><col style="width:90px"><col style="width:112px"><col style="width:112px"><col style="width:80px"></colgroup><thead><tr><th class="vt-grip-col"></th>${VT_TASK_COLS.map(th).join('')}<th class="actions-col"></th></tr></thead><tbody>${bodyRows}</tbody></table>`;
             }
             function vtVersionTasks() {
                 const d = admin.drawer;
@@ -7706,7 +7872,7 @@
                 positionPopoverAt(pop, anchor);
                 const t = pop.querySelector('#vtFilterText'); if (t) t.focus();
             }
-            function vtModuleRows(m, q, manual) {
+            function vtModuleRows(m, q, manual, versionLabel) {
                 const mt = state.moduleTasks.get(m.id);
                 const all = moduleTasksOf(m);
                 const nameHit = !q || matches(q, m.name);
@@ -7727,14 +7893,17 @@
                 return `
                 <tr class="vt-mod clickable${open ? ' open' : ''}${cls}" data-act="vm-toggle" data-module-id="${m.id}" data-drop-module="${m.id}">
                     <td class="vt-grip-col"><span class="vp-grip${manual ? '' : ' off'}" draggable="${manual}" data-act="vp-grip" data-drag="module" data-id="${m.id}" title="${manual ? 'Drag to move this module up or down' : 'Click the grip icon in the header to return to manual order'}">${icon('grip')}</span></td>
-                    <td class="vt-name" title="${escapeHtml(m.name)}"><div class="vt-namebox"><span class="chev${open ? ' open' : ''}">${icon('chevron')}</span><span class="bidi ell">${escapeHtml(m.name)}</span></div></td>
+                    <td class="vt-name" title="${escapeHtml(m.name)}"><div class="vt-namebox"><span class="chev${open ? ' open' : ''}">${icon('chevron')}</span><span class="bidi ell">${escapeHtml(m.name)}</span>${versionLabel ? `<span class="vt-ver">${escapeHtml(versionLabel)}</span>` : ''}</div></td>
+                    <td class="vt-lead">${leadCell(m, m.leadId ? (state.idToName.get(m.leadId) || 'Unknown') : '')}</td>
+                    <td>${moduleDeptSelect(m)}</td>
                     <td><select class="vpm-status-sel s-${escapeHtml(m.status || 'planned')}" data-module-status="${m.id}" title="Module status">${MODULE_STATUSES.map(([v, l]) => `<option value="${v}"${(m.status || 'planned') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
                     <td>${dateChip('module', m.id, 'startDate', m.startDate, 'Start')}</td>
                     <td>${dateChip('module', m.id, 'dueDate', m.dueDate, 'Due')}</td>
                     <td>${prog}</td>
                     <td class="row-actions">
                         <button type="button" class="icon-action" data-act="vm-edit" data-module-id="${m.id}" title="Edit module">${icon('edit')}</button>
-                        <button type="button" class="icon-action" data-act="vm-unlink" data-module-id="${m.id}" title="Take this module out of the version">${icon('x')}</button>
+                        ${m.versionId && cycleById(m.versionId) ? `<button type="button" class="icon-action" data-act="vm-unlink" data-module-id="${m.id}" title="Take this module out of the version">${icon('x')}</button>` : ''}
+                        <button type="button" class="icon-action danger" data-act="vm-delete" data-module-id="${m.id}" title="Delete this module — its tasks are kept">${icon('trash')}</button>
                     </td>
                 </tr>
                 ${open ? `<tr class="vt-detail" data-drop-module="${m.id}"><td colspan="${VT_COLS}">
@@ -7762,6 +7931,8 @@
                 if (key === 'manual') return shownMods;
                 const val = (m) => {
                     if (key === 'name') return m.name;
+                    if (key === 'lead') return m.leadId ? (state.idToName.get(m.leadId) || '~') : '~~';
+                    if (key === 'dept') return PJ_DEPTS[moduleDept(m.id)] || '~';
                     if (key === 'status') return MODULE_STATUSES.findIndex(x => x[0] === (m.status || 'planned'));
                     if (key === 'start') return m.startDate || '9999';
                     if (key === 'due') return m.dueDate || '9999';
@@ -7776,13 +7947,149 @@
             function vtHead() {
                 const { key, dir } = admin.vpSort;
                 const th = (k, label) => `<th class="sortable${key === k ? ' sort-active' : ''}${key === k && dir === 1 ? ' sort-asc' : ''}" data-vsort="${k}">${label}</th>`;
-                return `<colgroup><col style="width:38px"><col><col style="width:128px"><col style="width:112px"><col style="width:112px"><col style="width:150px"><col style="width:96px"></colgroup><thead><tr>
+                return `<colgroup><col style="width:38px"><col><col style="width:150px"><col style="width:124px"><col style="width:128px"><col style="width:112px"><col style="width:112px"><col style="width:150px"><col style="width:96px"></colgroup><thead><tr>
                     <th class="vt-grip-col sortable${key === 'manual' ? ' sort-active' : ''}" data-vsort="manual" title="Manual order — drag the grips to reorder">${icon('grip')}</th>
-                    ${th('name', 'Module')}${th('status', 'Status')}${th('start', 'Start')}${th('due', 'Due')}${th('progress', 'Progress')}
+                    ${th('name', 'Module')}${th('lead', 'Lead')}${th('dept', 'Department')}${th('status', 'Status')}${th('start', 'Start')}${th('due', 'Due')}${th('progress', 'Progress')}
                     <th class="actions-col"></th>
                 </tr></thead>`;
             }
 
+            const VP_ALL = '__all'; // Project selector value: every module of every project you manage
+            const leadOk = (m) => (!admin.vpLead || (admin.vpLead === 'none' ? !m.leadId : m.leadId === admin.vpLead))
+                && (!admin.vpDept || (admin.vpDept === 'none' ? !moduleDept(m.id) : moduleDept(m.id) === admin.vpDept));
+            const VERSION_WORK = [['planned', 'Planned'], ['in-progress', 'In progress'], ['paused', 'Paused'], ['completed', 'Completed'], ['cancelled', 'Cancelled']];
+            const versionWork = (cid) => state.planMeta.versions[cid] || '';
+            const versionWorkLabel = (cid) => (VERSION_WORK.find(x => x[0] === versionWork(cid)) || [])[1] || '';
+            const moduleDept = (mid) => state.planMeta.modules[mid] || '';
+            // Version work state / module department: shown at once, saved on our server, put back if the save fails.
+            async function savePlanMeta(kind, id, projectId, value, label) {
+                const box = state.planMeta[kind === 'version' ? 'versions' : 'modules'];
+                const prev = box[id];
+                if (value) box[id] = value; else delete box[id];
+                renderDrawer();
+                try {
+                    await dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/${kind}/${id}`, { projectId, value: value || null });
+                    toast(label + ' saved', 'ok');
+                } catch (e) {
+                    if (prev) box[id] = prev; else delete box[id];
+                    toast('Could not save: ' + e.message, 'err');
+                    renderDrawer();
+                }
+            }
+            const versionWorkSelect = (c) => `<select class="vpm-status-sel s-${versionWork(c.id) || 'none'}" data-version-work="${c.id}" title="Version state — set by hand">${versionWork(c.id) ? '' : '<option value="" selected>Set state…</option>'}${VERSION_WORK.map(([v, l]) => `<option value="${v}"${versionWork(c.id) === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+            const moduleDeptSelect = (m) => `<select class="vt-dept-sel${moduleDept(m.id) ? ' on' : ''}" data-module-dept="${m.id}" title="Department">${[['', '—']].concat(Object.entries(PJ_DEPTS)).map(([v, l]) => `<option value="${v}"${moduleDept(m.id) === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+            function renderLeadFilter(mods) {
+                const ids = [...new Set(mods.map(m => m.leadId).filter(Boolean).concat(admin.vpLead && admin.vpLead !== 'none' ? [admin.vpLead] : []))];
+                const people = ids.map(id => ({ id, name: state.idToName.get(id) || 'Unknown' })).sort((a, b) => a.name.localeCompare(b.name));
+                setSelectOptions(el('vpLead'), '<option value="">Lead: All</option>' + people.map(p => `<option value="${escapeHtml(p.id)}">Lead: ${escapeHtml(p.name)}</option>`).join('') + '<option value="none">No lead</option>', admin.vpLead);
+                el('vpLead').classList.toggle('filter-on', !!admin.vpLead);
+                el('vpDept').value = admin.vpDept;
+                el('vpDept').classList.toggle('filter-on', !!admin.vpDept);
+            }
+            async function deleteVersion(cid) {
+                const c = cycleById(cid);
+                if (!c || !confirm(`Delete the version “${c.name}”?\n\nIts modules and tasks are kept — they just leave this version. This cannot be undone.`)) return;
+                try {
+                    await adminApi('DELETE', `/projects/${c.projectId}/cycles/${c.id}/`);
+                } catch (e) {
+                    toast('Could not delete the version: ' + e.message, 'err');
+                    return;
+                }
+                admin.cycles = admin.cycles.filter(x => x.id !== cid);
+                admin.versionTasks.delete(cid);
+                if (versionWork(cid)) { delete state.planMeta.versions[cid]; dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/version/${cid}`, { projectId: c.projectId, value: null }).catch(() => {}); }
+                state.allTasks.forEach(t => { if (t.cycleId === cid) t.cycleId = null; });
+                const mods = modulesOfVersion(cid);
+                mods.forEach(m => { m.versionId = null; });
+                toast(`Version “${c.name}” deleted`, 'ok');
+                openVersionPage(null, c.projectId);
+                for (const m of mods) { // drop the dead version link from each module; best effort
+                    try { await adminApi('PATCH', `/projects/${m.projectId}/modules/${m.id}/`, moduleMetaBody(m, m.tag, null)); } catch (e) { /* the link points nowhere anyway */ }
+                }
+            }
+            async function deleteModule(mid) {
+                const m = moduleById(mid);
+                if (!m || !confirm(`Delete the module “${m.name}”?\n\nIts tasks are kept — they just leave this module. This cannot be undone.`)) return;
+                try {
+                    await adminApi('DELETE', `/projects/${m.projectId}/modules/${m.id}/`);
+                } catch (e) {
+                    toast('Could not delete the module: ' + e.message, 'err');
+                    return;
+                }
+                state.modules = state.modules.filter(x => x.id !== mid);
+                state.moduleTasks.delete(mid);
+                if (moduleDept(mid)) { delete state.planMeta.modules[mid]; dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/module/${mid}`, { projectId: m.projectId, value: null }).catch(() => {}); }
+                Object.values(state.moduleOrder).forEach(ids => { const i = ids.indexOf(mid); if (i >= 0) ids.splice(i, 1); });
+                admin.vmOpen.delete(mid);
+                if (state.moduleLeads[mid]) {
+                    delete state.moduleLeads[mid];
+                    dashJson('PUT', `/api/module-leads/${encodeURIComponent(activeWorkspace().slug)}/${mid}`, { projectId: m.projectId, userId: null }).catch(() => {});
+                }
+                toast(`Module “${m.name}” deleted`, 'ok');
+                afterModuleChange();
+            }
+
+            // All projects: every module of every project you manage, grouped by project (table or timeline).
+            function allScopeModules() {
+                const pids = new Set(manageableProjects().map(p => p.id));
+                const pjName = (pid) => (projectById(pid) || {}).name || '';
+                return state.modules.filter(m => pids.has(m.projectId) && !m.extForeign)
+                    .sort((a, b) => pjName(a.projectId).localeCompare(pjName(b.projectId)) || natCmp(a.name, b.name));
+            }
+            let allModsLoading = false;
+            async function loadAllScopeModules() {
+                if (allModsLoading) return;
+                const todo = allScopeModules().filter(m => !state.moduleTasks.get(m.id));
+                if (!todo.length) return;
+                allModsLoading = true;
+                try { await runPool(todo, 2, (m) => loadModuleTasks(m, true)); } finally { allModsLoading = false; }
+                if (admin.drawer && admin.drawer.projectId === VP_ALL) renderDrawer();
+            }
+            function renderAllModulesPage() {
+                setSelectOptions(el('vpVersion'), '<option value="">All versions</option>', '');
+                el('vpVersion').disabled = true;
+                const q = (admin.vpQuery || '').trim();
+                const scope = allScopeModules();
+                renderLeadFilter(scope);
+                const shown = scope.filter(m => moduleVisible(m, q) && leadOk(m));
+                loadAllScopeModules();
+                el('vpClearFilters').hidden = !Object.keys(admin.vtFilters).length && !admin.vpLead && !admin.vpDept;
+                el('vpCount').textContent = `${shown.length} of ${scope.length} modules`;
+                el('vpViewChips').querySelectorAll('[data-vpview]').forEach(b => b.classList.toggle('active', b.dataset.vpview === admin.vpView));
+                const groups = [];
+                shown.forEach(m => { const g = groups[groups.length - 1]; if (g && g.pid === m.projectId) g.mods.push(m); else groups.push({ pid: m.projectId, mods: [m] }); });
+                const verName = (m) => { if (!m.versionId) return 'No version'; const c = cycleById(m.versionId); return c ? c.name + (versionWorkLabel(c.id) ? ' · ' + versionWorkLabel(c.id) : '') : 'Version…'; }; // '…' = its version has not loaded yet
+                if (admin.vpView === 'timeline') {
+                    const gPrev = document.querySelector('#vpGantt .gantt-scroll');
+                    const gKeep = gPrev ? { l: gPrev.scrollLeft, t: gPrev.scrollTop } : null;
+                    const items = [];
+                    groups.forEach(g => {
+                        items.push({ name: `${(projectById(g.pid) || {}).name || 'Project'} (${g.mods.length})`, note: true });
+                        g.mods.forEach(m => vtModuleTimelineItems(m, q, items, verName(m)));
+                    });
+                    el('vpBody').innerHTML = `<div id="vpModulesSection"><div class="vp-section-title"><span>Timeline — all projects (${shown.length} modules)</span></div><div id="vpGantt"></div></div>`;
+                    renderGanttChart('vpGantt', items, 'Modules', 'No modules match.');
+                    const sc = document.querySelector('#vpGantt .gantt-scroll');
+                    if (sc && gKeep && !admin.vpGanttReset) { sc.scrollLeft = gKeep.l; sc.scrollTop = gKeep.t; }
+                    admin.vpGanttReset = false;
+                    return;
+                }
+                el('vpBody').innerHTML = `
+                    <div id="vpModulesSection">
+                        <div class="vp-section-title"><span>All projects — ${shown.length} modules</span></div>
+                        <div class="table-scroll vt-wrap">
+                            <table class="report-table admin-table vt">
+                                ${vtHead()}
+                                <tbody>
+                                    ${groups.map(g => `<tr class="vt-group"><td colspan="${VT_COLS}"><span class="vt-group-name">${escapeHtml((projectById(g.pid) || {}).name || 'Project')}</span><span class="hint">${g.mods.length} ${g.mods.length === 1 ? 'module' : 'modules'}</span></td></tr>`
+                                        + vtSortedMods(g.mods).map(m => vtModuleRows(m, q, false, verName(m))).join('')).join('')
+                                        || `<tr><td colspan="${VT_COLS}" class="empty-hint">${scope.length ? 'No modules match your filters.' : 'No modules yet.'}</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                shown.forEach(m => renderModuleResults(m.id));
+            }
             const VP_ORDER = { active: 0, upcoming: 1, draft: 2, completed: 3 };
             function versionsOfProject(pid) {
                 return admin.cycles.filter(c => c.projectId === pid)
@@ -7812,6 +8119,8 @@
             }
 
             function renderVersionPage(d) {
+                const pjOpts = '<option value="' + VP_ALL + '">All projects</option>' + manageableProjects().slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+                if (d.projectId === VP_ALL) { setSelectOptions(el('vpProject'), pjOpts, VP_ALL); renderAllModulesPage(); return; }
                 if (!d.projectId && state.projects.length) d.projectId = state.projects[0].id;
                 if (!d.id && d.auto && !versionsOfProject(d.projectId).length) {
                     const alt = state.projects.slice().sort((a, b) => a.name.localeCompare(b.name)).find(p => versionsOfProject(p.id).length);
@@ -7830,8 +8139,8 @@
                 }
                 const c = d.id ? cycleById(d.id) : null;
                 const vers = versionsOfProject(pid);
-                setSelectOptions(el('vpProject'), manageableProjects().slice().sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join(''), pid);
-                setSelectOptions(el('vpVersion'), vers.length ? vers.map(v => `<option value="${v.id}">${escapeHtml(v.name)}</option>`).join('') : '<option value="">No versions yet</option>', c ? c.id : '');
+                setSelectOptions(el('vpProject'), pjOpts, pid);
+                setSelectOptions(el('vpVersion'), vers.length ? vers.map(v => `<option value="${v.id}">${escapeHtml(v.name)}${versionWorkLabel(v.id) ? ' · ' + versionWorkLabel(v.id) : ''}</option>`).join('') : '<option value="">No versions yet</option>', c ? c.id : '');
                 el('vpVersion').disabled = !vers.length;
                 if (!c && !vers.length && admin.cycleFailed.has(pid)) {
                     el('vpCount').textContent = '';
@@ -7856,12 +8165,13 @@
                 const loose = vt.ids ? [...vt.ids].filter(id => !inModules.has(id)).map(findTaskById).filter(Boolean) : [];
                 const loadingMods = mods.some(m => !state.moduleTasks.get(m.id));
                 const linkable = state.modules.filter(m => m.projectId === c.projectId && !m.extForeign && (!m.versionId || !cycleById(m.versionId)) && m.versionId !== cid);
-                const shownMods = mods.filter(m => moduleVisible(m, q));
+                renderLeadFilter(mods);
+                const shownMods = mods.filter(m => moduleVisible(m, q) && leadOk(m));
                 const looseShown = q ? loose.filter(t => matches(q, t.name, t.stateName)) : loose;
                 const showLoose = vt.ids && !loadingMods && (q ? looseShown.length : loose.length);
                 const looseOpen = admin.vmOpen.has('loose') || !!q;
-                el('vpClearFilters').hidden = !Object.keys(admin.vtFilters).length;
-                el('vpCount').textContent = q ? `${shownMods.length} of ${mods.length} modules${looseShown.length ? ` · ${looseShown.length} other ${looseShown.length === 1 ? 'task' : 'tasks'}` : ''}` : `${mods.length} modules`;
+                el('vpClearFilters').hidden = !Object.keys(admin.vtFilters).length && !admin.vpLead && !admin.vpDept;
+                el('vpCount').textContent = q || admin.vpLead || admin.vpDept ? `${shownMods.length} of ${mods.length} modules${looseShown.length ? ` · ${looseShown.length} other ${looseShown.length === 1 ? 'task' : 'tasks'}` : ''}` : `${mods.length} modules`;
                 const gPrev = document.querySelector('#vpGantt .gantt-scroll');
                 const gKeep = gPrev ? { l: gPrev.scrollLeft, t: gPrev.scrollTop } : null;
                 el('vpBody').innerHTML = `
@@ -7880,6 +8190,7 @@
                                 <div class="vp-stat${overdue ? ' bad' : ''}"><b>${vt.ids ? overdue : '—'}</b><span>Overdue</span></div>
                             </div>
                             <div class="vp-hero-actions">
+                                ${versionWorkSelect(c)}
                                 <select class="pill v-pill v-${vs} vp-state-sel" data-version-state title="Version status"${vs === 'completed' ? ' disabled' : ''}>
                                     ${vs === 'upcoming' ? '<option value="upcoming" selected disabled>Upcoming</option>' : ''}
                                     <option value="draft"${vs === 'draft' ? ' selected' : ''}>Draft</option>
@@ -7887,6 +8198,7 @@
                                     <option value="completed"${vs === 'completed' ? ' selected' : ''}>Released</option>
                                 </select>
                                 <button type="button" class="btn btn-secondary btn-sm" data-act="vp-edit-version"${vs === 'completed' ? ' disabled' : ''} title="Edit name, dates and notes">${icon('edit')} Edit</button>
+                                <button type="button" class="btn btn-secondary btn-sm btn-danger-soft" data-act="vp-delete-version" title="Delete this version — its modules and tasks are kept">${icon('trash')} Delete</button>
                             </div>
                         </div>
                         ${vs === 'completed' ? '<div class="vp-lock">Released — Plane does not allow editing a version once its release date has passed.</div>' : ''}
@@ -7919,6 +8231,29 @@
                 else shownMods.forEach(m => renderModuleResults(m.id));
             }
 
+            const vtTaskTimelineItem = (t, where) => ({
+                taskId: t.id, barHtml: personLabel(t.assigneeNames.join(', ')),
+                name: t.name, depth: 1, startDate: t.startDate, dueDate: t.dueDate,
+                color: t.stateColor || STATE_COLORS[t.stateGroup] || STATE_COLORS.unstarted,
+                tip: `${t.name} — ${where}\n${t.startDate ? fmtDmy(t.startDate) : '—'} → ${t.dueDate ? fmtDmy(t.dueDate) : '—'}\nStatus: ${t.stateName}`
+            });
+            function vtModuleTimelineItems(m, q, items, versionLabel) {
+                const st = MODULE_STATUS[m.status] || { label: m.status, color: '#8b8d97' };
+                const expanded = admin.vmOpen.has(m.id) || !!q;
+                const lead = m.leadId ? (state.idToName.get(m.leadId) || 'Unknown') : '';
+                items.push({
+                    moduleId: m.id, expanded, name: versionLabel ? `${m.name} · ${versionLabel}` : m.name, startDate: m.startDate, dueDate: m.dueDate,
+                    barHtml: personLabel(lead),
+                    color: (tagForModule(m.id) || {}).color || st.color,
+                    tip: `${m.name}\n${m.startDate ? fmtDmy(m.startDate) : '—'} → ${m.dueDate ? fmtDmy(m.dueDate) : '—'}\nStatus: ${st.label}${lead ? `\nLead: ${lead}` : ''}${moduleDept(m.id) ? `\nDepartment: ${PJ_DEPTS[moduleDept(m.id)]}` : ''}`
+                });
+                if (!expanded) return;
+                const all = moduleTasksOf(m);
+                if (!all) { items.push({ name: 'Loading tasks…', depth: 1, note: true }); return; }
+                const tasks = !q || matches(q, m.name) ? all : all.filter(t => matches(q, t.name, t.stateName));
+                if (!tasks.length) items.push({ name: 'No tasks in this module', depth: 1, note: true });
+                tasks.forEach(t => items.push(vtTaskTimelineItem(t, m.name)));
+            }
             // Timeline: the version's modules as Gantt bars (drag an edge to change a module's dates).
             function renderVersionTimeline(c, shownMods, looseShown, showLoose, looseOpen, q, linkable, gKeep) {
                 const items = [];
@@ -7931,22 +8266,7 @@
                     color: t.stateColor || STATE_COLORS[t.stateGroup] || STATE_COLORS.unstarted,
                     tip: `${t.name} — ${where}\n${t.startDate ? fmtDmy(t.startDate) : '—'} → ${t.dueDate ? fmtDmy(t.dueDate) : '—'}\nStatus: ${t.stateName}`
                 });
-                vtSortedMods(shownMods).forEach(m => {
-                    const st = MODULE_STATUS[m.status] || { label: m.status, color: '#8b8d97' };
-                    const expanded = admin.vmOpen.has(m.id) || !!q;
-                    items.push({
-                        moduleId: m.id, expanded, name: m.name, startDate: m.startDate, dueDate: m.dueDate,
-                        barHtml: personLabel(m.leadId ? (state.idToName.get(m.leadId) || 'Unknown') : ''),
-                        color: (tagForModule(m.id) || {}).color || st.color,
-                        tip: `${m.name}\n${m.startDate ? fmtDmy(m.startDate) : '—'} → ${m.dueDate ? fmtDmy(m.dueDate) : '—'}\nStatus: ${st.label}`
-                    });
-                    if (!expanded) return;
-                    const all = moduleTasksOf(m);
-                    if (!all) { items.push({ name: 'Loading tasks…', depth: 1, note: true }); return; }
-                    const tasks = !q || matches(q, m.name) ? all : all.filter(t => matches(q, t.name, t.stateName));
-                    if (!tasks.length) items.push({ name: 'No tasks in this module', depth: 1, note: true });
-                    tasks.forEach(t => items.push(taskItem(t, m.name)));
-                });
+                vtSortedMods(shownMods).forEach(m => vtModuleTimelineItems(m, q, items));
                 if (showLoose) {
                     items.push({ moduleId: 'loose', expanded: looseOpen, name: `Tasks without a module (${looseShown.length})`, color: '#8b8d97' });
                     if (looseOpen) looseShown.forEach(t => items.push(taskItem(t, 'no module')));
@@ -8653,6 +8973,13 @@
             function setupVersionControls() {
                 const body = el('vpBody');
                 body.addEventListener('click', (e) => {
+                    const leadBtn = e.target.closest('.module-lead-btn');
+                    if (leadBtn) {
+                        e.stopPropagation();
+                        const m = moduleById(leadBtn.dataset.moduleId);
+                        if (m) { if (state.moduleLeadTarget === m.id) closeModuleLeadMenu(); else openModuleLeadMenu(m, leadBtn); }
+                        return;
+                    }
                     const sh = e.target.closest('[data-vsort]');
                     if (sh) {
                         e.stopPropagation();
@@ -8755,9 +9082,75 @@
                         }
                         return;
                     }
+                    if (t.dataset && t.dataset.versionWork) { const c = cycleById(t.dataset.versionWork); if (c) savePlanMeta('version', c.id, c.projectId, t.value, 'Version state'); return; }
+                    if (t.dataset && t.dataset.moduleDept) { const m = moduleById(t.dataset.moduleDept); if (m) savePlanMeta('module', m.id, m.projectId, t.value, 'Department'); return; }
                     if (t.dataset && t.dataset.moduleStatus) { saveModuleField(t.dataset.moduleStatus, { status: t.value }, { status: t.value }, 'Module status saved'); return; }
                     if (t.dataset && 'versionState' in t.dataset && admin.drawer) setVersionState(admin.drawer.id, t.value);
                 });
+            }
+            // Projects page: drag the six-dot grip to set your own project order (Sort: My order). Saved on the server for everyone.
+            function projectRank() {
+                const at = new Map(state.projectOrder.map((id, i) => [id, i]));
+                return (id) => (at.has(id) ? at.get(id) : 1e6);
+            }
+            async function reorderProject(dragId, targetId, after) {
+                if (dragId === targetId) return;
+                const rank = projectRank();
+                const ids = state.projects.slice().sort((a, b) => (rank(a.id) - rank(b.id)) || a.name.localeCompare(b.name)).map(p => p.id).filter(id => id !== dragId);
+                const at = ids.indexOf(targetId);
+                if (at < 0) return;
+                ids.splice(after ? at + 1 : at, 0, dragId);
+                const prev = state.projectOrder;
+                state.projectOrder = ids;
+                renderProjectsAdmin();
+                try {
+                    await dashJson('PUT', `/api/project-order/${encodeURIComponent(activeWorkspace().slug)}`, { ids });
+                } catch (e) {
+                    state.projectOrder = prev;
+                    toast('Could not save the order: ' + e.message, 'err');
+                    renderProjectsAdmin();
+                }
+            }
+            function setupProjectDrag() {
+                let dragId = null;
+                const host = el('viewProjects');
+                const clear = () => host.querySelectorAll('.pj-drop-before, .pj-drop-after, .pj-dragging').forEach(x => x.classList.remove('pj-drop-before', 'pj-drop-after', 'pj-dragging'));
+                host.addEventListener('dragstart', (e) => {
+                    const g = e.target.closest && e.target.closest('[data-pj-drag]');
+                    if (!g) return;
+                    dragId = g.dataset.pjDrag;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', dragId);
+                    const item = g.closest('[data-pj-drop]');
+                    if (item) { e.dataTransfer.setDragImage(item, 16, 16); setTimeout(() => item.classList.add('pj-dragging'), 0); }
+                });
+                const sideOf = (item, e) => {
+                    const r = item.getBoundingClientRect();
+                    return item.classList.contains('pcard') ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2; // cards flow sideways, rows downwards
+                };
+                const over = (e) => {
+                    if (!dragId) return;
+                    const item = e.target.closest && e.target.closest('[data-pj-drop]');
+                    if (!item || item.dataset.pjDrop === dragId) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    host.querySelectorAll('.pj-drop-before, .pj-drop-after').forEach(x => x.classList.remove('pj-drop-before', 'pj-drop-after'));
+                    item.classList.add(sideOf(item, e) ? 'pj-drop-after' : 'pj-drop-before');
+                };
+                host.addEventListener('dragenter', over);
+                host.addEventListener('dragover', over);
+                host.addEventListener('drop', (e) => {
+                    if (!dragId) return;
+                    const item = e.target.closest && e.target.closest('[data-pj-drop]');
+                    const id = dragId;
+                    dragId = null;
+                    if (!item) { clear(); return; }
+                    e.preventDefault();
+                    const after = sideOf(item, e);
+                    clear();
+                    reorderProject(id, item.dataset.pjDrop, after);
+                });
+                host.addEventListener('dragend', () => { dragId = null; clear(); });
             }
             function setupVersionDrag() {
                 const body = el('vpBody');
@@ -8777,6 +9170,7 @@
                     if (!card) return;
                     const target = card.dataset.dropModule;
                     if (d.kind === 'module' ? target === 'loose' || target === d.id : target === d.from) return;
+                    if (d.kind === 'task' && target !== 'loose') { const t = findTaskById(d.id), tm = moduleById(target); if (!t || !tm || tm.projectId !== t.projectId) return; } // a task stays in its own project
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     body.querySelectorAll('.drop-before, .drop-after, .drop-into').forEach(x => x.classList.remove('drop-before', 'drop-after', 'drop-into'));
@@ -8920,6 +9314,8 @@
                 'new-version': () => openVersionModal(),
                 'retry-cycles': () => retryFailedCycles(),
                 'assign-project': (b) => openAssignModal([], [b.dataset.projectId]),
+                'edit-project': (b) => openProjectEdit(b.dataset.projectId),
+                'pj-grip': () => {},
                 'assign-member': (b) => openAssignModal([b.dataset.memberId], []),
                 'version-for-project': (b) => openVersionModal(b.dataset.projectId),
                 'bulk-assign': () => openAssignModal([...admin.mbSelected], []),
@@ -8940,10 +9336,13 @@
                 'vm-edit': (b) => openModuleEdit(b.dataset.moduleId),
                 'vp-grip': () => {},
                 'vp-edit-version': () => openVersionEdit(admin.drawer.id),
+                'vp-delete-version': () => deleteVersion(admin.drawer.id),
+                'vm-delete': (b) => deleteModule(b.dataset.moduleId),
                 'vm-task-add': (b) => quickAddTaskToModule(b.dataset.moduleId, b.dataset.taskId, b),
                 'vm-task-create': (b) => quickCreateTaskInModule(b.dataset.moduleId, b),
                 'vm-task-remove': (b) => removeTaskFromModule(b.dataset.moduleId, b.dataset.taskId),
-                'vd-remove': (b) => removeTaskFromVersion(admin.drawer.id, b.dataset.taskId)
+                'vd-remove': (b) => removeTaskFromVersion(admin.drawer.id, b.dataset.taskId),
+                'vt-delete': (b) => { const t = findTaskById(b.dataset.taskId); if (t) deleteTask(t); }
             };
 
             // ---------- Command palette ----------
@@ -9105,6 +9504,7 @@
                     renderProjectsAdmin();
                 });
                 setupVersionDrag();
+                setupProjectDrag();
                 setupVersionControls();
                 setupDatePicker();
                 el('vpSearch').addEventListener('input', () => { admin.vpQuery = el('vpSearch').value; renderDrawer(); });
@@ -9114,7 +9514,9 @@
                     renderDrawer();
                 });
                 el('vpCollapse').addEventListener('click', () => { admin.vmOpen = new Set(); renderDrawer(); });
-                el('vpClearFilters').addEventListener('click', () => { admin.vtFilters = {}; closeVtFilter(); renderDrawer(); });
+                el('vpClearFilters').addEventListener('click', () => { admin.vtFilters = {}; admin.vpLead = ''; admin.vpDept = ''; closeVtFilter(); renderDrawer(); });
+                el('vpLead').addEventListener('change', () => { admin.vpLead = el('vpLead').value; admin.vpGanttReset = true; renderDrawer(); });
+                el('vpDept').addEventListener('change', () => { admin.vpDept = el('vpDept').value; admin.vpGanttReset = true; renderDrawer(); });
                 el('vpViewChips').addEventListener('click', (e) => {
                     const b = e.target.closest('[data-vpview]'); if (!b) return;
                     admin.vpView = b.dataset.vpview;
@@ -9125,8 +9527,10 @@
                 document.addEventListener('click', (e) => {
                     if (!e.target.closest('#vtFilterPop') && !e.target.closest('[data-vfilter]')) closeVtFilter();
                 }, true);
-                el('vpNewVersion').addEventListener('click', () => openVersionModal(admin.drawer && admin.drawer.projectId));
+                el('vpNewVersion').addEventListener('click', () => openVersionModal(admin.drawer && admin.drawer.projectId !== VP_ALL ? admin.drawer.projectId : undefined));
+                el('vpBackProjects').addEventListener('click', () => switchView('projects'));
                 el('vpProject').addEventListener('change', () => {
+                    if (el('vpProject').value === VP_ALL) { openVersionPage(null, VP_ALL); return; }
                     const first = versionsOfProject(el('vpProject').value)[0];
                     openVersionPage(first ? first.id : null, el('vpProject').value);
                 });
@@ -9138,13 +9542,17 @@
                 });
                 el('pjHealth').addEventListener('change', () => { admin.pjHealth = el('pjHealth').value; renderProjectsAdmin(); });
                 el('pjDept').addEventListener('change', () => { admin.pjDept = el('pjDept').value; renderProjectsAdmin(); });
+                el('pjStatus').value = admin.pjStatus;
+                el('pjStatus').addEventListener('change', () => { admin.pjStatus = el('pjStatus').value; renderProjectsAdmin(); });
                 el('pjLate').addEventListener('click', () => { admin.pjLate = !admin.pjLate; renderProjectsAdmin(); });
                 el('drawerBody').addEventListener('click', (e) => {
                     const d = admin.drawer; if (!d || d.kind !== 'project') return;
                     const c = e.target.closest('[data-set-cat]');
                     const t = e.target.closest('[data-toggle-dept]');
-                    if (!c && !t) return;
+                    const sb = e.target.closest('[data-set-status]');
                     const cur = state.categories[d.id] || { category: '', depts: [] };
+                    if (sb) { saveProjectCategory(d.id, cur.category || '', cur.depts || [], sb.dataset.setStatus); return; }
+                    if (!c && !t) return;
                     if (c) saveProjectCategory(d.id, cur.category === c.dataset.setCat ? '' : c.dataset.setCat, cur.depts);
                     else saveProjectCategory(d.id, cur.category, cur.depts.includes(t.dataset.toggleDept) ? cur.depts.filter(x => x !== t.dataset.toggleDept) : cur.depts.concat(t.dataset.toggleDept));
                 });
@@ -9349,7 +9757,17 @@
             }
 
             // ---------- Assignments for people who only exist in this dashboard ----------
+            // A module lead with only a dashboard account is kept on our server; it shows as 'dash:<id>' like task assignees.
+            function applyDashModuleLeads() {
+                const known = new Set(state.dashUsers.map(u => u.id));
+                state.modules.forEach(m => {
+                    if (m.planeLeadId === undefined) m.planeLeadId = m.leadId;
+                    const d = state.moduleLeads[m.id];
+                    m.leadId = d && known.has(d) ? 'dash:' + d : m.planeLeadId;
+                });
+            }
             function applyDashAssignments() {
+                applyDashModuleLeads();
                 state.dashUsers.forEach(u => state.idToName.set('dash:' + u.id, u.name));
                 const known = new Set(state.dashUsers.map(u => u.id));
                 state.allTasks.forEach(t => {
@@ -9361,12 +9779,18 @@
             }
             async function fetchDashTeam(slug) {
                 try {
-                    const [team, assignments, cats, order] = await Promise.all([
+                    const [team, assignments, cats, order, pjOrder, dashLeads, planMeta] = await Promise.all([
                         dashJson('GET', `/api/team?slug=${encodeURIComponent(slug)}`),
                         dashJson('GET', `/api/assignments?slug=${encodeURIComponent(slug)}`),
                         dashJson('GET', `/api/categories?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
-                        dashJson('GET', `/api/module-order?slug=${encodeURIComponent(slug)}`).catch(() => ({}))
+                        dashJson('GET', `/api/module-order?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
+                        dashJson('GET', `/api/project-order?slug=${encodeURIComponent(slug)}`).catch(() => []),
+                        dashJson('GET', `/api/module-leads?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
+                        dashJson('GET', `/api/plan-meta?slug=${encodeURIComponent(slug)}`).catch(() => null)
                     ]);
+                    state.planMeta = { versions: (planMeta && planMeta.versions) || {}, modules: (planMeta && planMeta.modules) || {} };
+                    state.moduleLeads = dashLeads || {};
+                    state.projectOrder = Array.isArray(pjOrder) ? pjOrder : [];
                     state.dashUsers = team || [];
                     state.assignments = assignments || {};
                     state.categories = cats || {};
@@ -9376,6 +9800,9 @@
                     state.assignments = {};
                     state.categories = {};
                     state.moduleOrder = {};
+                    state.projectOrder = [];
+                    state.moduleLeads = {};
+                    state.planMeta = { versions: {}, modules: {} };
                 }
             }
             async function reloadDashTeam() {
