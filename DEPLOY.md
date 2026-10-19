@@ -6,10 +6,10 @@ node server.js            # http://127.0.0.1:8787/
 node server.js adduser <username> <password ≥ 8 chars> [admin|employee] [Full Name]
 node server.js passwd  <username> <new password>
 ```
-Workspaces and their Plane API keys live in `config.json` (server only). Accounts and task assignments live in `data/`. Neither folder is ever sent to the browser. Back up `data/` and `config.json`.
+Workspaces and their Plane API keys live in `config.json` (server only). Accounts and the session key live in `data/`; neither is ever sent to the browser or to git — back them up. Dashboard-only data lives in `db/database.json` (+ `db/files/`), kept in git. Planning fields (categories, status, order, version state, module department) live in Plane.
 
 ## On a VPS
-1. Copy `server.js`, `Web Task.html`, `config.json`, `data/` to the server (Node 18+ only, no `npm install`).
+1. Copy `server.js`, `Web Task.html`, `config.json`, `data/`, `db/` to the server (Node 18+ only, no `npm install`).
 2. In `config.json` set `"host": "127.0.0.1"`, `"secureCookie": true`, `"trustProxy": true`.
 3. Put HTTPS in front (Caddy shown; nginx works the same):
    ```

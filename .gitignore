@@ -2,6 +2,7 @@
 config.json
 config.backup*.json
 data/
+db/*.tmp
 
 # Local backups and scratch copies (older ones held API keys)
 *.backup*

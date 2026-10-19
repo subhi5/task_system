@@ -14,4 +14,7 @@ On Windows you can double-click `Start Web Task.bat`.
 
 Deployment, roles and Claude/MCP tokens: see [DEPLOY.md](DEPLOY.md).
 
-`config.json` and the `data/` folder hold your API key, accounts, notes and uploaded files — they are git-ignored; back them up separately.
+## Where the data lives
+- **Plane** — tasks, modules, versions, members, plus the dashboard's planning fields: project category, sections, status and drag order; version state; module department and order (kept in Plane's hidden `external_source` / `external_id` fields).
+- **`db/`** (in git — keep this repo **private**) — what Plane cannot hold: tasks and module leads given to dashboard-only people, private sticky notes, the uploaded-file list and the files. Double-click `Save data to GitHub.bat` to commit and push it; it refuses while the repo is public.
+- **`data/` and `config.json`** (never in git) — accounts with password hashes, the session key and the Plane API key. Back these up separately.

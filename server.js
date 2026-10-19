@@ -12,17 +12,13 @@ const scrypt = promisify(crypto.scrypt);
 const ROOT = __dirname;
 const DATA_DIR = process.env.DASH_DATA || path.join(ROOT, 'data');
 const CONFIG_FILE = process.env.DASH_CONFIG || path.join(ROOT, 'config.json');
+// data/ (never in git): accounts with password hashes and the session key.
+// db/ (kept in git): what Plane cannot hold. Project/version/module planning fields live in Plane itself.
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const ASSIGN_FILE = path.join(DATA_DIR, 'assignments.json');
-const CATEGORY_FILE = path.join(DATA_DIR, 'categories.json');
-const ORDER_FILE = path.join(DATA_DIR, 'module-order.json');
-const PROJECT_ORDER_FILE = path.join(DATA_DIR, 'project-order.json');
-const MODULE_LEADS_FILE = path.join(DATA_DIR, 'module-leads.json');
-const PLAN_META_FILE = path.join(DATA_DIR, 'plan-meta.json');
 const SECRET_FILE = path.join(DATA_DIR, 'secret.key');
-const NOTES_FILE = path.join(DATA_DIR, 'notes.json');
-const FILES_DIR = path.join(DATA_DIR, 'files');        // uploaded project/version files, stored by id only
-const FILES_INDEX = path.join(DATA_DIR, 'files.json'); // { slug: [file record] }
+const DB_DIR = process.env.DASH_DB || path.join(ROOT, 'db');
+const DB_FILE = path.join(DB_DIR, 'database.json');
+const FILES_DIR = path.join(DB_DIR, 'files'); // uploaded project/version files, stored by id only
 const PAGE_FILE = path.join(ROOT, 'Web Task.html');
 
 const SESSION_MS = 12 * 3600 * 1000;
@@ -32,6 +28,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const UUID_RE = new RegExp(`^${UUID}$`, 'i');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+fs.mkdirSync(DB_DIR, { recursive: true });
 
 function readJson(file, fallback) {
     try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return fallback; }
@@ -52,16 +49,26 @@ try { secret = fs.readFileSync(SECRET_FILE, 'utf8').trim(); } catch (e) { /* fir
 if (!secret) { secret = crypto.randomBytes(32).toString('hex'); fs.writeFileSync(SECRET_FILE, secret); }
 
 let users = readJson(USERS_FILE, []);
-let assignments = readJson(ASSIGN_FILE, {}); // { slug: { issueId: [userId] } }
 const saveUsers = () => writeJson(USERS_FILE, users);
-const saveAssignments = () => writeJson(ASSIGN_FILE, assignments);
-let categories = readJson(CATEGORY_FILE, {}); // { slug: { projectId: { category, depts: [] } } }
-let moduleOrder = readJson(ORDER_FILE, {}); // { slug: { versionId: [moduleId] } }
-let planMeta = readJson(PLAN_META_FILE, {}); // { slug: { versions: { cycleId: state }, modules: { moduleId: dept } } }
-let moduleLeads = readJson(MODULE_LEADS_FILE, {}); // { slug: { moduleId: dashboard userId } }
-let projectOrder = readJson(PROJECT_ORDER_FILE, {}); // { slug: [projectId] } — the admin's drag order on the Projects page
-let fileIndex = readJson(FILES_INDEX, {});
-let notes = readJson(NOTES_FILE, {}); // { userId: [note] } — private sticky notes, not tied to any task
+// The database: built once from the older data/*.json files, then one file for everything here.
+function loadDb() {
+    const db = readJson(DB_FILE, null);
+    if (db) return db;
+    const old = (name) => readJson(path.join(DATA_DIR, name), {});
+    const fresh = { assignments: old('assignments.json'), moduleLeads: old('module-leads.json'), notes: old('notes.json'), files: old('files.json') };
+    const oldFiles = path.join(DATA_DIR, 'files');
+    if (fs.existsSync(oldFiles) && !fs.existsSync(FILES_DIR)) fs.renameSync(oldFiles, FILES_DIR);
+    writeJson(DB_FILE, fresh);
+    return fresh;
+}
+const db = loadDb();
+['assignments', 'moduleLeads', 'notes', 'files'].forEach(k => { db[k] = db[k] || {}; });
+const saveDb = () => writeJson(DB_FILE, db);
+const assignments = db.assignments; // { slug: { issueId: [userId] } } — tasks given to dashboard-only people
+const moduleLeads = db.moduleLeads; // { slug: { moduleId: userId } } — module leads who have no Plane account
+const fileIndex = db.files; // { slug: [file record] }
+const notes = db.notes; // { userId: [note] } — private sticky notes, not tied to any task
+const saveAssignments = saveDb;
 const NOTE_COLORS = ['yellow', 'pink', 'green', 'blue', 'purple', 'orange'];
 const clampNum = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : d; };
 function setNotes(user, list) {
@@ -76,40 +83,8 @@ function setNotes(user, list) {
         updatedAt: String(n.updatedAt || new Date().toISOString()).slice(0, 30)
     }));
     if (clean.length) notes[user.id] = clean; else delete notes[user.id];
-    writeJson(NOTES_FILE, notes);
+    saveDb();
     return clean;
-}
-function setProjectOrder(slug, ids) {
-    if (!wsByLink(slug)) throw fail(400, 'Bad request');
-    const list = [...new Set((Array.isArray(ids) ? ids : []).map(x => String(x).toLowerCase()))];
-    if (list.length > 500 || !list.every(x => UUID_RE.test(x))) throw fail(400, 'Bad project list');
-    if (list.length) projectOrder[slug] = list; else delete projectOrder[slug];
-    writeJson(PROJECT_ORDER_FILE, projectOrder);
-    return list;
-}
-function setModuleOrder(slug, versionId, ids) {
-    versionId = String(versionId || '').toLowerCase();
-    if (!wsByLink(slug) || !UUID_RE.test(versionId)) throw fail(400, 'Bad request');
-    const list = [...new Set((Array.isArray(ids) ? ids : []).map(x => String(x).toLowerCase()))];
-    if (list.length > 300 || !list.every(x => UUID_RE.test(x))) throw fail(400, 'Bad module list');
-    moduleOrder[slug] = moduleOrder[slug] || {};
-    if (list.length) moduleOrder[slug][versionId] = list; else delete moduleOrder[slug][versionId];
-    writeJson(ORDER_FILE, moduleOrder);
-    return list;
-}
-const CATEGORY_KEYS = ['machine', 'robot', 'office'];
-const DEPT_KEYS = ['mechanical', 'electronics', 'software'];
-const PROJECT_STATUS = ['active', 'hold', 'closed']; // 'active' is the default and is not stored
-function setCategory(slug, projectId, category, depts, status) {
-    projectId = String(projectId || '').toLowerCase();
-    if (!wsByLink(slug) || !UUID_RE.test(projectId)) throw fail(400, 'Bad request');
-    if (category && !CATEGORY_KEYS.includes(category)) throw fail(400, 'Unknown category');
-    const ds = [...new Set(Array.isArray(depts) ? depts : [])].filter(d => DEPT_KEYS.includes(d));
-    const st = PROJECT_STATUS.includes(status) ? status : 'active';
-    categories[slug] = categories[slug] || {};
-    if (category || ds.length || st !== 'active') categories[slug][projectId] = { category: category || '', depts: ds, status: st }; else delete categories[slug][projectId];
-    writeJson(CATEGORY_FILE, categories);
-    return categories[slug][projectId] || { category: '', depts: [], status: 'active' };
 }
 
 // ---------- Passwords and sessions ----------
@@ -378,7 +353,7 @@ function saveLink(user, slug, pid, b) {
         uploaderId: user.id, uploaderName: user.name, createdAt: new Date().toISOString()
     };
     fileIndex[slug] = (fileIndex[slug] || []).concat(rec);
-    writeJson(FILES_INDEX, fileIndex);
+    saveDb();
     return rec;
 }
 // Anyone who can see the project may retag or re-note an item; renaming stays with the admin or the uploader.
@@ -391,7 +366,7 @@ function updateFileItem(user, slug, id, b) {
         if (!managesProject(user, slug, f.projectId) && f.uploaderId !== user.id) throw fail(403, 'Only an admin, the project admin or the uploader can rename this');
         f.name = f.type === 'link' ? (String(b.name || '').trim().slice(0, 200) || f.name) : cleanName(b.name);
     }
-    writeJson(FILES_INDEX, fileIndex);
+    saveDb();
     return f;
 }
 function listFiles(user, slug) {
@@ -427,7 +402,7 @@ async function saveUpload(req, user, slug, pid, url) {
         uploaderId: user.id, uploaderName: user.name, createdAt: new Date().toISOString()
     };
     fileIndex[slug] = (fileIndex[slug] || []).concat(rec);
-    writeJson(FILES_INDEX, fileIndex);
+    saveDb();
     return rec;
 }
 function sendStoredFile(req, res, user, slug, id, inline) {
@@ -451,7 +426,7 @@ function deleteStoredFile(user, slug, id) {
     if (!f || !canSeeProject(user, slug, f.projectId)) throw fail(404, 'File not found');
     if (!managesProject(user, slug, f.projectId) && f.uploaderId !== user.id) throw fail(403, 'Only an admin, the project admin or the person who uploaded it can delete this file');
     fileIndex[slug] = fileIndex[slug].filter(x => x !== f);
-    writeJson(FILES_INDEX, fileIndex);
+    saveDb();
     fs.rm(path.join(FILES_DIR, f.id), { force: true }, () => {});
 }
 
@@ -523,23 +498,8 @@ function setModuleLead(user, slug, moduleId, projectId, userId) {
     }
     moduleLeads[slug] = moduleLeads[slug] || {};
     if (userId) moduleLeads[slug][moduleId] = userId; else delete moduleLeads[slug][moduleId];
-    writeJson(MODULE_LEADS_FILE, moduleLeads);
+    saveDb();
     return userId || null;
-}
-const VERSION_STATES = ['planned', 'in-progress', 'paused', 'completed', 'cancelled'];
-const MODULE_DEPTS = ['mechanical', 'electronics', 'software'];
-function setPlanMeta(user, slug, kind, id, projectId, value) {
-    id = String(id || '').toLowerCase();
-    projectId = String(projectId || '').toLowerCase();
-    if (!wsByLink(slug) || !UUID_RE.test(id) || !UUID_RE.test(projectId)) throw fail(400, 'Bad request');
-    if (!managesProject(user, slug, projectId)) throw fail(403, 'Only an admin or this project\'s admin can change this');
-    const allowed = kind === 'versions' ? VERSION_STATES : MODULE_DEPTS;
-    if (value && !allowed.includes(value)) throw fail(400, 'Unknown value');
-    planMeta[slug] = planMeta[slug] || { versions: {}, modules: {} };
-    const box = planMeta[slug][kind] = planMeta[slug][kind] || {};
-    if (value) box[id] = value; else delete box[id];
-    writeJson(PLAN_META_FILE, planMeta);
-    return value || null;
 }
 const teamOf = (slug) => users.filter(u => u.role === 'employee' && u.active && u.access && u.access[slug]).map(u => ({ id: u.id, name: u.name }));
 
@@ -709,25 +669,6 @@ async function apiRoutes(req, res, user, url) {
         if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
         return sendJson(res, 200, assignments[slug] || {});
     }
-    if (p === '/api/module-order' && req.method === 'GET') {
-        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
-        return sendJson(res, 200, moduleOrder[slug] || {});
-    }
-    if ((m = p.match(/^\/api\/module-order\/([A-Za-z0-9_-]+)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
-        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
-        const b = await readJsonBody(req);
-        if (!managesProject(user, m[1], b.projectId)) throw fail(403, 'Only an admin or this project\'s admin can reorder its modules');
-        return sendJson(res, 200, { ids: setModuleOrder(m[1], m[2], b.ids) });
-    }
-    if (p === '/api/plan-meta' && req.method === 'GET') {
-        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
-        return sendJson(res, 200, planMeta[slug] || { versions: {}, modules: {} });
-    }
-    if ((m = p.match(/^\/api\/plan-meta\/([A-Za-z0-9_-]+)\/(version|module)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
-        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
-        const b = await readJsonBody(req);
-        return sendJson(res, 200, { value: setPlanMeta(user, m[1], m[2].toLowerCase() === 'version' ? 'versions' : 'modules', m[3], b.projectId, b.value) });
-    }
     if (p === '/api/module-leads' && req.method === 'GET') {
         if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
         return sendJson(res, 200, moduleLeads[slug] || {});
@@ -736,25 +677,6 @@ async function apiRoutes(req, res, user, url) {
         if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
         const b = await readJsonBody(req);
         return sendJson(res, 200, { userId: setModuleLead(user, m[1], m[2], b.projectId, b.userId) });
-    }
-    if (p === '/api/project-order' && req.method === 'GET') {
-        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
-        return sendJson(res, 200, projectOrder[slug] || []);
-    }
-    if ((m = p.match(/^\/api\/project-order\/([A-Za-z0-9_-]+)$/)) && req.method === 'PUT') {
-        if (user.role !== 'admin') throw fail(403, 'Admins only');
-        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
-        return sendJson(res, 200, { ids: setProjectOrder(m[1], (await readJsonBody(req)).ids) });
-    }
-    if (p === '/api/categories' && req.method === 'GET') {
-        if (!userSlugs(user).includes(slug)) throw fail(403, 'Not allowed for your account');
-        return sendJson(res, 200, categories[slug] || {});
-    }
-    if ((m = p.match(/^\/api\/categories\/([A-Za-z0-9_-]+)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
-        if (user.role !== 'admin') throw fail(403, 'Admins only');
-        if (!userSlugs(user).includes(m[1])) throw fail(403, 'Not allowed for your account');
-        const b = await readJsonBody(req);
-        return sendJson(res, 200, setCategory(m[1], m[2], String(b.category || ''), b.depts, String(b.status || 'active')));
     }
     if ((m = p.match(/^\/api\/assignments\/([A-Za-z0-9_-]+)\/([0-9a-f-]{36})$/i)) && req.method === 'PUT') {
         const b = await readJsonBody(req);
@@ -1089,11 +1011,10 @@ const TOOLS = [
             const vid = a.version_id ? needId(a, 'version_id', 'list_versions') : null;
             const m = await pj(user, slug, 'GET', `/projects/${pid}/modules/${mid}/`);
             if (m.external_source && m.external_source !== MODULE_TAG_SRC) throw new Error('This module is linked to an import and cannot be tied to a version.');
-            const meta = moduleMeta(m);
-            const o = { m: mid };
-            if (meta.n && meta.c) { o.n = meta.n; o.c = meta.c; } // keep its dashboard tag
+            const o = Object.assign({}, moduleMeta(m), { m: mid }); // keeps its tag, department and order
+            delete o.u; delete o.v;
             if (vid) o.v = vid;
-            const body = (o.n || o.v) ? { external_source: MODULE_TAG_SRC, external_id: JSON.stringify(o) } : { external_source: null, external_id: null };
+            const body = Object.keys(o).length > 1 ? { external_source: MODULE_TAG_SRC, external_id: JSON.stringify(o) } : { external_source: null, external_id: null };
             await pj(user, slug, 'PATCH', `/projects/${pid}/modules/${mid}/`, '', body);
             return { module_id: mid, version_id: vid };
         }

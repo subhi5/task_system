@@ -2499,22 +2499,26 @@
             const MODULE_TAG_SRC = 'swb-dash-tag';
             const tagKey = (name) => name.trim().toLowerCase();
 
-            // Tag and version link share the module's external fields: { n, c } = tag, { v } = version id.
+            // Tag, version link, department and order share the module's external fields: { n, c } = tag, { v } = version id, { d } = department, { o } = order.
             function parseModuleMeta(raw) {
-                const meta = { tag: null, versionId: null };
+                const meta = { tag: null, versionId: null, dept: '', order: null };
                 if (raw.external_source !== MODULE_TAG_SRC) return meta;
                 try {
                     const o = JSON.parse(raw.external_id || '');
                     if (o && typeof o.n === 'string' && o.n.trim() && /^#[0-9a-f]{6}$/i.test(o.c)) meta.tag = { name: o.n.trim(), color: o.c };
                     if (o && typeof o.v === 'string' && o.v) meta.versionId = o.v;
+                    if (o && typeof o.d === 'string') meta.dept = o.d;
+                    if (o && typeof o.o === 'number' && isFinite(o.o)) meta.order = o.o;
                 } catch (e) { /* not ours / malformed */ }
                 return meta;
             }
             function moduleMetaBody(m, tag, versionId) {
-                if (!tag && !versionId) return { external_source: null, external_id: null };
+                if (!tag && !versionId && !m.dept && m.order == null) return { external_source: null, external_id: null };
                 const o = { m: m.id };
                 if (tag) { o.n = tag.name; o.c = tag.color; }
                 if (versionId) o.v = versionId;
+                if (m.dept) o.d = m.dept;
+                if (m.order != null) o.o = m.order;
                 return { external_source: MODULE_TAG_SRC, external_id: JSON.stringify(o) };
             }
 
@@ -2525,15 +2529,13 @@
                 session: null, // { user, workspaces } from /auth/me
                 dashUsers: [], // employee accounts that exist only in this dashboard
                 assignments: {}, // issueId -> [dashboard user ids]
-                categories: {}, // projectId -> { category, depts }
+                categories: {}, // projectId -> { category, depts, status } — read from each project's Plane external fields
                 taskView: ['board', 'timeline'].includes(localStorage.getItem('planeDash_tasksView')) ? localStorage.getItem('planeDash_tasksView') : 'table',
                 myTasks: localStorage.getItem('planeDash_myTasks') === '1',
                 taskQuery: '',
                 scope: loadScope(), // { projectId, versionId, moduleId } picked in the top bar
-                moduleOrder: {}, // versionId -> [moduleId] in the order the admin arranged them
-                projectOrder: [], // projectId[] in the order the admin dragged them on the Projects page
+                projectOrder: [], // projectId[] in drag order — from the projects' Plane external fields
                 moduleLeads: {}, // moduleId -> dashboard userId, for leads who have no Plane account
-                planMeta: { versions: {}, modules: {} }, // version work state and module department, kept by our server
                 members: [],
                 projects: [],
                 modules: [],
@@ -2605,11 +2607,17 @@
 
             // All calls go to our own server, which holds the Plane key; a 401 sends the person back to the login.
             async function dashFetch(url, method, body) {
-                const res = await fetch(url, {
+                const send = () => fetch(url, {
                     method, credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'dash' },
                     body: body === undefined || body === null ? undefined : JSON.stringify(body)
                 });
+                let res = await send();
+                // Plane allows 60 requests/min; a 429 changed nothing, so every Plane call (reads and writes) waits and retries.
+                for (let attempt = 1; res.status === 429 && url.startsWith('/plane/') && attempt <= 5; attempt++) {
+                    await new Promise(r => setTimeout(r, 3000 * attempt + Math.random() * 800));
+                    res = await send();
+                }
                 if (res.status === 401) { showLogin(); throw new Error('Signed out — please sign in again.'); }
                 return res;
             }
@@ -2848,6 +2856,8 @@
                     completed: raw.completed_issues,
                     tag: meta.tag, // { name, color } | null
                     versionId: meta.versionId, // cycle id this module lives in, or null
+                    dept: meta.dept, // mechanical | electronics | software | ''
+                    order: meta.order, // position inside its version (drag order), or null
                     extForeign: !!raw.external_source && raw.external_source !== MODULE_TAG_SRC // linked to a real import: leave alone
                 };
             }
@@ -2923,6 +2933,7 @@
                     if (token !== loadSeq) return null;
                     projects.forEach(p => { p.ws = ws; });
                     state.projects = projects;
+                    syncProjectMeta();
 
                     if (state.projects.length === 0) {
                         state.warnings.push('No projects were returned for this workspace — check the workspace slug and API key permissions.');
@@ -6942,6 +6953,10 @@
                 else closeDrawer();
             }
 
+            function cycleWorkOf(raw) {
+                if (raw.external_source !== MODULE_TAG_SRC) return '';
+                try { const o = JSON.parse(raw.external_id || '{}'); return typeof o.w === 'string' ? o.w : ''; } catch (e) { return ''; }
+            }
             function normalizeCycle(raw, project) {
                 const num = (v) => (typeof v === 'number' ? v : null);
                 return {
@@ -6953,7 +6968,8 @@
                     startDate: raw.start_date ? String(raw.start_date).slice(0, 10) : null,
                     endDate: raw.end_date ? String(raw.end_date).slice(0, 10) : null,
                     total: num(raw.total_issues),
-                    completed: num(raw.completed_issues)
+                    completed: num(raw.completed_issues),
+                    work: cycleWorkOf(raw) // hand-set state, kept in Plane's external fields { y, w }
                 };
             }
 
@@ -7278,16 +7294,43 @@
                     </div>`).join('') : '<div class="list-empty">Nobody has open tasks.</div>';
             }
 
+            // A project's category, sections, status and drag order live in Plane: its external fields hold { p, c, d, s, o }.
+            function projectMetaOf(p) {
+                if (!p || p.external_source !== MODULE_TAG_SRC) return {};
+                try { return JSON.parse(p.external_id || '{}') || {}; } catch (e) { return {}; }
+            }
+            function syncProjectMeta() {
+                state.categories = {};
+                state.projects.forEach(p => {
+                    const o = projectMetaOf(p);
+                    const depts = Array.isArray(o.d) ? o.d.filter(d => PJ_DEPTS[d]) : [];
+                    if (o.c || depts.length || (o.s && o.s !== 'active')) state.categories[p.id] = { category: PJ_CATS[o.c] ? o.c : '', depts, status: PJ_STATUS[o.s] ? o.s : 'active' };
+                });
+                state.projectOrder = state.projects.filter(p => typeof projectMetaOf(p).o === 'number')
+                    .sort((a, b) => projectMetaOf(a).o - projectMetaOf(b).o).map(p => p.id);
+            }
+            async function saveProjectMeta(pid, patch) {
+                const p = projectById(pid);
+                if (!p) throw new Error('Unknown project');
+                if (p.external_source && p.external_source !== MODULE_TAG_SRC) throw new Error('This project is linked to an import, so its extra fields cannot be used.');
+                const o = Object.assign(projectMetaOf(p), patch, { p: pid });
+                if (!o.c) delete o.c;
+                if (!o.d || !o.d.length) delete o.d;
+                if (!o.s || o.s === 'active') delete o.s;
+                if (typeof o.o !== 'number') delete o.o;
+                const body = Object.keys(o).length > 1 ? { external_source: MODULE_TAG_SRC, external_id: JSON.stringify(o) } : { external_source: null, external_id: null };
+                await apiPatch(wsForProject(pid), `/projects/${pid}/`, body);
+                Object.assign(p, body);
+            }
             async function saveProjectCategory(pid, category, depts, status) {
-                const slug = activeWorkspace().slug;
                 const prev = state.categories[pid];
                 if (status === undefined) status = projectStatus(pid);
                 state.categories[pid] = { category, depts, status };
                 renderAdminViews();
                 refreshProjectStatusViews();
                 try {
-                    const saved = await dashJson('PUT', `/api/categories/${encodeURIComponent(slug)}/${pid}`, { category, depts, status });
-                    if (saved && (saved.category || (saved.depts || []).length || (saved.status && saved.status !== 'active'))) state.categories[pid] = saved; else delete state.categories[pid];
+                    await saveProjectMeta(pid, { c: category || '', d: depts || [], s: status });
+                    syncProjectMeta();
                 } catch (e) {
                     if (prev) state.categories[pid] = prev; else delete state.categories[pid];
                     alert('Could not save category: ' + e.message);
@@ -7718,12 +7761,11 @@
             }
 
             function sortedModules(cid) {
-                const order = state.moduleOrder[cid] || [];
                 return modulesOfVersion(cid).sort((x, y) => {
-                    const ix = order.indexOf(x.id), iy = order.indexOf(y.id);
-                    if (ix >= 0 && iy >= 0) return ix - iy;
-                    if (ix >= 0) return -1;
-                    if (iy >= 0) return 1;
+                    const ox = x.order, oy = y.order;
+                    if (ox != null && oy != null && ox !== oy) return ox - oy;
+                    if (ox != null && oy == null) return -1;
+                    if (oy != null && ox == null) return 1;
                     return natCmp(x.name, y.name);
                 });
             }
@@ -7958,21 +8000,29 @@
             const leadOk = (m) => (!admin.vpLead || (admin.vpLead === 'none' ? !m.leadId : m.leadId === admin.vpLead))
                 && (!admin.vpDept || (admin.vpDept === 'none' ? !moduleDept(m.id) : moduleDept(m.id) === admin.vpDept));
             const VERSION_WORK = [['planned', 'Planned'], ['in-progress', 'In progress'], ['paused', 'Paused'], ['completed', 'Completed'], ['cancelled', 'Cancelled']];
-            const versionWork = (cid) => state.planMeta.versions[cid] || '';
+            const versionWork = (cid) => (cycleById(cid) || {}).work || '';
             const versionWorkLabel = (cid) => (VERSION_WORK.find(x => x[0] === versionWork(cid)) || [])[1] || '';
-            const moduleDept = (mid) => state.planMeta.modules[mid] || '';
-            // Version work state / module department: shown at once, saved on our server, put back if the save fails.
+            const moduleDept = (mid) => (moduleById(mid) || {}).dept || '';
+            // Version work state / module department: shown at once, saved in Plane, put back if the save fails.
             async function savePlanMeta(kind, id, projectId, value, label) {
-                const box = state.planMeta[kind === 'version' ? 'versions' : 'modules'];
-                const prev = box[id];
-                if (value) box[id] = value; else delete box[id];
+                const obj = kind === 'version' ? cycleById(id) : moduleById(id);
+                if (!obj) return;
+                const key = kind === 'version' ? 'work' : 'dept';
+                const prev = obj[key];
+                obj[key] = value || '';
                 renderDrawer();
                 try {
-                    await dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/${kind}/${id}`, { projectId, value: value || null });
+                    if (kind === 'version') {
+                        const body = value ? { external_source: MODULE_TAG_SRC, external_id: JSON.stringify({ y: id, w: value }) } : { external_source: null, external_id: null };
+                        await adminApi('PATCH', `/projects/${projectId}/cycles/${id}/`, body);
+                    } else {
+                        if (obj.extForeign) throw new Error('This module is linked to an import, so its extra fields cannot be used.');
+                        await adminApi('PATCH', `/projects/${projectId}/modules/${id}/`, moduleMetaBody(obj, obj.tag, obj.versionId));
+                    }
                     toast(label + ' saved', 'ok');
                 } catch (e) {
-                    if (prev) box[id] = prev; else delete box[id];
-                    toast('Could not save: ' + e.message, 'err');
+                    obj[key] = prev;
+                    toast('Could not save: ' + e.message + (kind === 'version' && versionStatus(obj) === 'completed' ? ' (Plane locks released versions)' : ''), 'err');
                     renderDrawer();
                 }
             }
@@ -7997,7 +8047,6 @@
                 }
                 admin.cycles = admin.cycles.filter(x => x.id !== cid);
                 admin.versionTasks.delete(cid);
-                if (versionWork(cid)) { delete state.planMeta.versions[cid]; dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/version/${cid}`, { projectId: c.projectId, value: null }).catch(() => {}); }
                 state.allTasks.forEach(t => { if (t.cycleId === cid) t.cycleId = null; });
                 const mods = modulesOfVersion(cid);
                 mods.forEach(m => { m.versionId = null; });
@@ -8018,8 +8067,6 @@
                 }
                 state.modules = state.modules.filter(x => x.id !== mid);
                 state.moduleTasks.delete(mid);
-                if (moduleDept(mid)) { delete state.planMeta.modules[mid]; dashJson('PUT', `/api/plan-meta/${encodeURIComponent(activeWorkspace().slug)}/module/${mid}`, { projectId: m.projectId, value: null }).catch(() => {}); }
-                Object.values(state.moduleOrder).forEach(ids => { const i = ids.indexOf(mid); if (i >= 0) ids.splice(i, 1); });
                 admin.vmOpen.delete(mid);
                 if (state.moduleLeads[mid]) {
                     delete state.moduleLeads[mid];
@@ -8868,16 +8915,21 @@
                 const at = ids.indexOf(targetId);
                 if (at < 0 || moduleId === targetId) return;
                 ids.splice(after ? at + 1 : at, 0, moduleId);
-                const prev = state.moduleOrder[cid];
-                state.moduleOrder[cid] = ids;
+                const writes = orderWrites(ids, id => (moduleById(id) || {}).order, moduleId);
+                const prev = new Map(writes.map(([id]) => [id, moduleById(id).order]));
+                writes.forEach(([id, o]) => { moduleById(id).order = o; });
                 renderDrawer();
-                try {
-                    await dashJson('PUT', `/api/module-order/${encodeURIComponent(activeWorkspace().slug)}/${cid}`, { ids, projectId: (cycleById(cid) || {}).projectId });
-                } catch (e) {
-                    if (prev) state.moduleOrder[cid] = prev; else delete state.moduleOrder[cid];
-                    toast('Could not save the order: ' + e.message, 'err');
-                    renderDrawer();
+                for (const [id, o] of writes) {
+                    const m = moduleById(id);
+                    try {
+                        await adminApi('PATCH', `/projects/${m.projectId}/modules/${m.id}/`, moduleMetaBody(m, m.tag, m.versionId));
+                    } catch (e) {
+                        m.order = prev.get(id);
+                        toast('Could not save the order: ' + e.message, 'err');
+                        break;
+                    }
                 }
+                renderDrawer();
             }
             // One date picker for every date field: months are numbered 1-12 and dates read DD/MM/YYYY.
             const dp = { input: null, anchor: null, y: 0, m: 0 };
@@ -9022,7 +9074,7 @@
                         openDatePicker(inp, chip);
                         return;
                     }
-                    if (e.target.closest('[data-module-status], [data-version-state]')) { e.stopPropagation(); return; }
+                    if (e.target.closest('[data-module-status], [data-version-state], [data-module-dept], [data-version-work]')) { e.stopPropagation(); return; }
                     const pill = e.target.closest('.status-pill-btn, .priority-pill-btn');
                     if (pill) {
                         e.stopPropagation();
@@ -9088,7 +9140,28 @@
                     if (t.dataset && 'versionState' in t.dataset && admin.drawer) setVersionState(admin.drawer.id, t.value);
                 });
             }
-            // Projects page: drag the six-dot grip to set your own project order (Sort: My order). Saved on the server for everyone.
+            // Projects page: drag the six-dot grip to set your own project order (Sort: My order). Saved in Plane for everyone.
+            // Lists read: numbered items rising, then unnumbered ones by name. After a drag the mover gets one number
+            // between its neighbours (one write); only when that cannot work is the list renumbered 10, 20, 30…
+            function orderWrites(ids, orderOf, movedId) {
+                const cur = ids.map(orderOf);
+                const num = (k) => typeof cur[k] === 'number';
+                const i = ids.indexOf(movedId);
+                const others = ids.map((_, k) => k).filter(k => k !== i);
+                let last = -Infinity, tail = false, othersOk = true;
+                for (const k of others) {
+                    if (num(k)) { if (tail || cur[k] <= last) { othersOk = false; break; } last = cur[k]; } else tail = true;
+                }
+                if (othersOk && i >= 0) {
+                    const lo = others.filter(k => k < i).pop(), hi = others.find(k => k > i);
+                    if (lo === undefined || num(lo)) {
+                        if (hi === undefined || !num(hi)) return [[movedId, lo === undefined ? 10 : cur[lo] + 10]];
+                        const v = lo === undefined ? cur[hi] - 10 : (cur[lo] + cur[hi]) / 2;
+                        if (lo === undefined || (v > cur[lo] && v < cur[hi])) return [[movedId, v]];
+                    }
+                }
+                return ids.map((id, k) => [id, (k + 1) * 10]).filter(([, v], k) => cur[k] !== v);
+            }
             function projectRank() {
                 const at = new Map(state.projectOrder.map((id, i) => [id, i]));
                 return (id) => (at.has(id) ? at.get(id) : 1e6);
@@ -9100,16 +9173,15 @@
                 const at = ids.indexOf(targetId);
                 if (at < 0) return;
                 ids.splice(after ? at + 1 : at, 0, dragId);
-                const prev = state.projectOrder;
                 state.projectOrder = ids;
                 renderProjectsAdmin();
                 try {
-                    await dashJson('PUT', `/api/project-order/${encodeURIComponent(activeWorkspace().slug)}`, { ids });
+                    for (const [id, o] of orderWrites(ids, id => projectMetaOf(projectById(id)).o, dragId)) await saveProjectMeta(id, { o });
                 } catch (e) {
-                    state.projectOrder = prev;
                     toast('Could not save the order: ' + e.message, 'err');
-                    renderProjectsAdmin();
                 }
+                syncProjectMeta();
+                renderProjectsAdmin();
             }
             function setupProjectDrag() {
                 let dragId = null;
@@ -9779,30 +9851,18 @@
             }
             async function fetchDashTeam(slug) {
                 try {
-                    const [team, assignments, cats, order, pjOrder, dashLeads, planMeta] = await Promise.all([
+                    const [team, assignments, dashLeads] = await Promise.all([
                         dashJson('GET', `/api/team?slug=${encodeURIComponent(slug)}`),
                         dashJson('GET', `/api/assignments?slug=${encodeURIComponent(slug)}`),
-                        dashJson('GET', `/api/categories?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
-                        dashJson('GET', `/api/module-order?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
-                        dashJson('GET', `/api/project-order?slug=${encodeURIComponent(slug)}`).catch(() => []),
-                        dashJson('GET', `/api/module-leads?slug=${encodeURIComponent(slug)}`).catch(() => ({})),
-                        dashJson('GET', `/api/plan-meta?slug=${encodeURIComponent(slug)}`).catch(() => null)
+                        dashJson('GET', `/api/module-leads?slug=${encodeURIComponent(slug)}`).catch(() => ({}))
                     ]);
-                    state.planMeta = { versions: (planMeta && planMeta.versions) || {}, modules: (planMeta && planMeta.modules) || {} };
                     state.moduleLeads = dashLeads || {};
-                    state.projectOrder = Array.isArray(pjOrder) ? pjOrder : [];
                     state.dashUsers = team || [];
                     state.assignments = assignments || {};
-                    state.categories = cats || {};
-                    state.moduleOrder = order || {};
                 } catch (e) {
                     state.dashUsers = [];
                     state.assignments = {};
-                    state.categories = {};
-                    state.moduleOrder = {};
-                    state.projectOrder = [];
                     state.moduleLeads = {};
-                    state.planMeta = { versions: {}, modules: {} };
                 }
             }
             async function reloadDashTeam() {
