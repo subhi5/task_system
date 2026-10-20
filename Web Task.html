@@ -1840,6 +1840,7 @@
                         <option value="mechanical">Mechanical</option>
                         <option value="electronics">Electronics</option>
                         <option value="software">Software</option>
+                        <option value="purchase">Purchase</option>
                     </select>
                     <div class="chips" id="pjLateChip" title="Only projects with overdue tasks"><button type="button" class="chip" id="pjLate">Overdue only</button></div>
                 </div>
@@ -1891,6 +1892,7 @@
                             <option value="mechanical">Mechanical</option>
                             <option value="electronics">Electronics</option>
                             <option value="software">Software</option>
+                            <option value="purchase">Purchase</option>
                             <option value="none">No department</option>
                         </select>
                         <button type="button" class="btn btn-secondary" id="vpClearFilters" hidden>Clear filters</button>
@@ -2856,7 +2858,7 @@
                     completed: raw.completed_issues,
                     tag: meta.tag, // { name, color } | null
                     versionId: meta.versionId, // cycle id this module lives in, or null
-                    dept: meta.dept, // mechanical | electronics | software | ''
+                    dept: meta.dept, // mechanical | electronics | software | purchase | ''
                     order: meta.order, // position inside its version (drag order), or null
                     extForeign: !!raw.external_source && raw.external_source !== MODULE_TAG_SRC // linked to a real import: leave alone
                 };
@@ -6879,7 +6881,7 @@
                 drawer: null, // { kind: 'project' | 'member' | 'version', id }
                 versionTasks: new Map(), // cycle id -> { loading } | { ids: Set } | { error }
                 vpLead: '', // Versions tasks lead filter: '' all · 'none' no lead · member id
-                vpDept: '', // Versions tasks department filter: '' all · 'none' · mechanical | electronics | software
+                vpDept: '', // Versions tasks department filter: '' all · 'none' · mechanical | electronics | software | purchase
                 dpQuery: '', vmQuery: {}, vmOpen: new Set(), vmBusy: new Set(),
                 cmdkItems: [], cmdkSel: 0
             };
@@ -7349,7 +7351,7 @@
                 robot: { label: 'Robots', one: 'Robot', color: '#a855f7', ico: 'catRobot' },
                 office: { label: 'Office & Routine', one: 'Office', color: '#14b8a6', ico: 'catOffice' }
             };
-            const PJ_DEPTS = { mechanical: 'Mechanical', electronics: 'Electronics', software: 'Software' };
+            const PJ_DEPTS = { mechanical: 'Mechanical', electronics: 'Electronics', software: 'Software', purchase: 'Purchase' };
             const catOf = (pid) => ((state.categories[pid] || {}).category) || '';
             const deptsOf = (pid) => ((state.categories[pid] || {}).depts) || [];
             const catPill = (pid) => { const c = PJ_CATS[catOf(pid)]; return c ? `<span class="cat-pill" style="--cat:${c.color}">${icon(c.ico)}${c.one}</span>` : ''; };
