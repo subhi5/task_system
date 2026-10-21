@@ -463,6 +463,8 @@
         .gantt-cell-name.gantt-module-toggle { cursor: pointer; }
         .gantt-cell-name.gantt-module-toggle:hover { background: var(--bg-hover); }
         .gantt-cell-name.is-note { color: var(--text-muted); font-style: italic; }
+        .gantt-cell-name.is-group { font-weight: 700; color: var(--text); background: var(--bg-hover); }
+        .gantt-row:has(.is-group) .gantt-cell-bars { background: var(--bg-hover); }
         .gantt-grid.names-narrow .gl-duration, .gantt-grid.names-narrow .gh-labels > span:nth-child(2) { display: none; }
         .gantt-cell-head-left { flex-direction: column; align-items: stretch !important; justify-content: space-between !important; gap: 4px !important; padding: 5px 12px 6px !important; }
         .gh-ctrl { display: flex; align-items: center; gap: 6px; }
@@ -5735,15 +5737,26 @@
             let keepGanttScroll = false;
 
             function renderGantt() {
-                const items = ganttTasksList().map(t => ({
-                    taskId: t.id,
-                    name: t.name,
-                    startDate: t.startDate,
-                    dueDate: t.dueDate,
-                    color: t.stateColor || STATE_COLORS[t.stateGroup] || STATE_COLORS.unstarted,
-                    barHtml: personLabel(t.assigneeNames.join(', ')),
-                    tip: `${t.name} — ${t.projectName}\n${t.startDate ? fmtDate(t.startDate) : '—'} → ${t.dueDate ? fmtDate(t.dueDate) : '—'}\nStatus: ${t.stateName}`
-                }));
+                // Tasks sit under a heading row per project (projects in "My order"), each keeping the date order.
+                const groups = new Map();
+                ganttTasksList().forEach(t => { if (!groups.has(t.projectId)) groups.set(t.projectId, []); groups.get(t.projectId).push(t); });
+                const rank = projectRank();
+                const items = [];
+                [...groups.entries()]
+                    .sort(([a, ta], [b, tb]) => (rank(a) - rank(b)) || String(ta[0].projectName).localeCompare(String(tb[0].projectName)))
+                    .forEach(([, list]) => {
+                        items.push({ name: `${list[0].projectName} (${list.length})`, note: true, group: true });
+                        list.forEach(t => items.push({
+                            taskId: t.id,
+                            name: t.name,
+                            depth: 1,
+                            startDate: t.startDate,
+                            dueDate: t.dueDate,
+                            color: t.stateColor || STATE_COLORS[t.stateGroup] || STATE_COLORS.unstarted,
+                            barHtml: personLabel(t.assigneeNames.join(', ')),
+                            tip: `${t.name} — ${t.projectName}\n${t.startDate ? fmtDate(t.startDate) : '—'} → ${t.dueDate ? fmtDate(t.dueDate) : '—'}\nStatus: ${t.stateName}`
+                        }));
+                    });
                 renderGanttChart('ganttBody', items, 'Work items', 'No tasks match the current filters.');
             }
 
@@ -5825,7 +5838,7 @@
                     const toggle = t.moduleId
                         ? `<button type="button" class="expand-toggle${t.expanded ? ' expanded' : ''}" title="${t.expanded ? 'Hide' : 'Show'} tasks">${CHEVRON_ICON_SVG}</button>`
                         : '';
-                    const nameCls = `gantt-cell-name${t.moduleId ? ' gantt-module-toggle' : ''}${t.note ? ' is-note' : ''}`;
+                    const nameCls = `gantt-cell-name${t.moduleId ? ' gantt-module-toggle' : ''}${t.group ? ' is-group' : t.note ? ' is-note' : ''}`;
                     const nameAttrs = t.moduleId ? ` data-module-id="${t.moduleId}"` : '';
                     const leftText = t.taskId ? `<span class="task-link" data-open-task="${t.taskId}">${escapeHtml(t.name)}</span>` : escapeHtml(t.name);
                     return `
